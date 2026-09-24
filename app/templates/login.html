@@ -1,0 +1,18 @@
+{% from "macros.html" import csrf, field with context %}
+<!doctype html><html lang="en"><head>{% include "_head.html" %}<title>Sign in · {{ restaurant_name }}</title></head>
+<body>
+<div class="entry">
+  <section class="panel"><h1>{{ restaurant_name }}</h1><p>Sign in to run service, stock and the books.</p></section>
+  <section class="form-side">
+    <form method="post" novalidate>
+      <h2 style="font-size:1.4rem">Sign in</h2>
+      {% if error %}<div class="error-box" role="alert">{{ error }}</div>{% endif %}
+      {{ csrf() }}
+      {{ field('username', 'Username', username, {}, required=True, autocomplete='username', attrs='autofocus') }}
+      {{ field('password', 'Password', '', {}, type='password', required=True, autocomplete='current-password') }}
+      <div class="actions"><button class="btn primary" type="submit">Sign in</button></div>
+    </form>
+  </section>
+</div>
+{% include "_toasts.html" %}<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body></html>

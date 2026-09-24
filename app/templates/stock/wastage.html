@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Record wastage{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record wastage</h1><p>Spoiled, damaged or expired stock. Deducted FIFO, oldest batch first.</p></div></div>
+<form method="post" class="card" style="max-width:36rem" novalidate>{{ csrf() }}
+  <div class="field"><label for="f-item_id">Item</label><select id="f-item_id" name="item_id" required>
+    <option value="">Choose an item…</option>{% for i in items %}<option value="{{ i.id }}" {% if form.get('item_id')|string == i.id|string %}selected{% endif %}>{{ i.name }} ({{ i.sku }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="f-location_id">Location</label><select id="f-location_id" name="location_id" required>
+    <option value="">Choose a location…</option>{% for l in locations %}<option value="{{ l.id }}" {% if form.get('location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+  {{ field('quantity', 'Quantity wasted', form.get('quantity',''), errors, required=True) }}
+  {{ field('reason', 'Reason', form.get('reason',''), errors, required=True, help='e.g. Dropped, spoiled, expired.') }}
+  <div class="actions"><button class="btn danger solid" type="submit">Record wastage</button></div>
+</form>
+{% endblock %}

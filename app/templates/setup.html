@@ -1,0 +1,33 @@
+{% from "macros.html" import csrf, field with context %}
+<!doctype html><html lang="en"><head>{% include "_head.html" %}<title>Set up · Restaurant ERP</title></head>
+<body>
+<div class="entry wide">
+  <section class="panel"><h1>Set up your restaurant</h1><p>One-time setup. You can change everything except the administrator role later in Settings.</p></section>
+  <section class="form-side">
+    <form method="post" novalidate>
+      {{ csrf() }}
+      <h2>Restaurant</h2>
+      {{ field('restaurant_name', 'Restaurant name', form.restaurant_name, errors, required=True) }}
+      <div class="grid2">
+        <div class="field{{ ' has-error' if errors.timezone }}"><label for="f-timezone">Time zone</label>
+          <input id="f-timezone" name="timezone" list="tzlist" value="{{ form.timezone }}" autocomplete="off">
+          <datalist id="tzlist">{% for tz in timezones %}<option value="{{ tz }}">{% endfor %}</datalist>
+          {% if errors.timezone %}<p class="err">{{ errors.timezone }}</p>{% endif %}</div>
+        {{ field('currency_code', 'Currency code', form.currency_code, errors, help='e.g. USD, EUR, PKR') }}
+      </div>
+      {{ field('currency_symbol', 'Currency symbol', form.currency_symbol, errors) }}
+      <h2 style="margin-top:1.4rem">First branch</h2>
+      <div class="grid2">{{ field('branch_name', 'Branch name', form.branch_name, errors) }}{{ field('branch_code', 'Branch code', form.branch_code, errors) }}</div>
+      <h2 style="margin-top:1.4rem">Administrator account</h2>
+      {{ field('full_name', 'Your name', form.full_name, errors, required=True) }}
+      {{ field('username', 'Username', form.username, errors, required=True, autocomplete='username') }}
+      <div class="grid2">
+        {{ field('password', 'Password', '', errors, type='password', required=True, autocomplete='new-password', help='At least 8 characters.') }}
+        {{ field('password2', 'Confirm password', '', errors, type='password', required=True, autocomplete='new-password') }}
+      </div>
+      <div class="actions"><button class="btn primary" type="submit">Create restaurant</button></div>
+    </form>
+  </section>
+</div>
+{% include "_toasts.html" %}<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body></html>

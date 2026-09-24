@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit ' ~ user.full_name if user else 'Add user' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ user.full_name if user else 'Add user' }}</h1></div></div>
+<form method="post" class="card" style="max-width:44rem" novalidate>{{ csrf() }}
+  <div class="grid2">
+    {% if user %}<div class="field"><label>Username</label><input value="{{ user.username }}" disabled></div>
+    {% else %}{{ field('username', 'Username', form.username, errors, required=True, help='Letters, numbers, dots, dashes. Cannot be changed later.') }}{% endif %}
+    {{ field('full_name', 'Full name', form.full_name, errors, required=True) }}
+  </div>
+  {{ field('email', 'Email', form.email, errors, type='email') }}
+  <div class="field{{ ' has-error' if errors.role_id }}"><label for="f-role_id">Role<span class="req">*</span></label>
+    <select id="f-role_id" name="role_id" required><option value="">Choose a role…</option>
+      {% for r in roles %}<option value="{{ r.id }}" {% if form.role_id|string == r.id|string %}selected{% endif %}>{{ r.name }}</option>{% endfor %}</select>
+    {% if errors.role_id %}<p class="err">{{ errors.role_id }}</p>{% else %}<p class="help">You can only assign roles that give no more access than you have.</p>{% endif %}</div>
+  <fieldset style="border:1px solid var(--line);border-radius:8px;margin:0 0 .9rem;padding:.7rem .9rem"><legend style="font-weight:600">Branch access</legend>
+    {% if can_all_branches %}<label class="check"><input type="checkbox" name="all_branches" {% if form.all_branches %}checked{% endif %}> All branches, including ones added later</label>{% endif %}
+    {% for b in branches %}<label class="check"><input type="checkbox" name="branch_ids" value="{{ b.id }}" {% if b.id|string in form.branch_ids|default([]) %}checked{% endif %}> {{ b.name }} {% if not b.is_active %}<span class="pill">Inactive</span>{% endif %}</label>{% endfor %}
+    {% if errors.branch_ids %}<p class="err">{{ errors.branch_ids }}</p>{% endif %}
+    <p class="help" style="margin-bottom:0">Super Admins always have access to everything.</p></fieldset>
+  {% if not user %}
+    {{ field('password', 'Temporary password', '', errors, type='password', required=True, autocomplete='new-password', help='At least ' ~ min_length ~ ' characters. Share it securely; the user must change it at first sign-in.') }}
+    <input type="hidden" name="must_change_password" value="on">
+  {% endif %}
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if user else 'Create user' }}</button><a class="btn" href="{{ url_for('users.index') }}">Cancel</a></div>
+</form>
+{% if user and user.id != current_user.id %}
+<div class="card" style="max-width:44rem"><h2>Account recovery</h2>
+  <form method="post" action="{{ url_for('users.reset_password', user_id=user.id) }}" class="grid2" style="align-items:end">{{ csrf() }}
+    {{ field('password', 'New temporary password', '', {}, type='password', autocomplete='new-password') }}
+    <div class="field"><button class="btn danger" type="submit" data-confirm="Reset the password for {{ user.full_name }}? Their current sessions end immediately." data-confirm-label="Reset password">Reset password</button></div></form>
+  <form method="post" action="{{ url_for('users.unlock', user_id=user.id) }}">{{ csrf() }}<button class="btn" type="submit">Clear sign-in lockout</button></form>
+</div>{% endif %}
+{% endblock %}

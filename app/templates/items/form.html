@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit ' ~ item.name if item else 'Add item' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ item.name if item else 'Add item' }}</h1></div></div>
+<form method="post" class="card" style="max-width:50rem" novalidate>{{ csrf() }}
+  <div class="grid2">
+    {% if item %}<div class="field"><label>SKU</label><input value="{{ item.sku }}" disabled></div>
+    {% else %}{{ field('sku', 'SKU', form.sku, errors, required=True, help='Unique code, cannot be changed later.') }}{% endif %}
+    {{ field('name', 'Name', form.name, errors, required=True) }}
+  </div>
+  <div class="grid2">
+    <div class="field{{ ' has-error' if errors.item_type }}"><label for="f-item_type">Type<span class="req">*</span></label>
+      <select id="f-item_type" name="item_type">{% for t in item_types %}<option value="{{ t }}" {% if form.item_type == t %}selected{% endif %}>{{ t.replace('_',' ')|capitalize }}</option>{% endfor %}</select>
+      {% if errors.item_type %}<p class="err">{{ errors.item_type }}</p>{% endif %}</div>
+    <div class="field"><label for="f-category_id">Category</label><select id="f-category_id" name="category_id"><option value="">None</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if form.category_id|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="grid2">
+    <div class="field{{ ' has-error' if errors.stock_unit_id }}"><label for="f-stock_unit_id">Stock unit<span class="req">*</span></label>
+      <select id="f-stock_unit_id" name="stock_unit_id" {% if item %}disabled{% endif %}>
+        {% for u in units %}<option value="{{ u.id }}" {% if form.stock_unit_id|string == u.id|string %}selected{% endif %}>{{ u.name }} ({{ u.code }})</option>{% endfor %}</select>
+      {% if item %}<input type="hidden" name="stock_unit_id" value="{{ form.stock_unit_id }}">
+        <p class="help">Cannot be changed once the item exists; it would invalidate past stock history.</p>{% endif %}
+      {% if errors.stock_unit_id %}<p class="err">{{ errors.stock_unit_id }}</p>{% endif %}</div>
+    <div class="field"><label class="check"><input type="checkbox" name="track_batches" {% if form.track_batches %}checked{% endif %} {% if item %}disabled{% endif %}> Track batches and expiry (FIFO costing)</label>
+      {% if item %}<input type="hidden" name="track_batches" value="{{ 'on' if form.track_batches else '' }}">{% endif %}
+      <p class="help">Turn this off only for items you never need to cost or expire individually.</p></div>
+  </div>
+  <div class="grid2">
+    {{ field('min_stock', 'Minimum stock', form.min_stock, errors) }}
+    {{ field('reorder_level', 'Reorder level', form.reorder_level, errors) }}
+  </div>
+  <div class="grid2">
+    {{ field('max_stock', 'Maximum stock', form.max_stock, errors, help='Optional.') }}
+    {{ field('shelf_life_days', 'Shelf life (days)', form.shelf_life_days, errors, help='Optional; used for expiry tracking.') }}
+  </div>
+  {{ field('selling_price', 'Selling price', form.selling_price, errors, help='For finished or semi-finished items you sell directly.') }}
+  <div class="field"><label for="f-description">Description</label><textarea id="f-description" name="description">{{ form.description }}</textarea></div>
+
+  <h3 style="margin-top:1rem">Packaging units <span class="muted small">(optional, e.g. “Box” = 24 {{ 'of the stock unit' }})</span></h3>
+  {% set pk = form.get('_packaging') or (item.packaging_units if item else []) %}
+  <div id="pkg-rows">
+    {% for row in pk %}<div class="grid2" style="margin-bottom:.4rem">
+      <input name="pkg_name" placeholder="Name, e.g. Box" value="{{ row.name }}">
+      <input name="pkg_factor" placeholder="Quantity, e.g. 24" value="{{ row.factor_to_stock_unit if row.factor_to_stock_unit is defined else row.factor }}"></div>
+    {% endfor %}
+    <div class="grid2"><input name="pkg_name" placeholder="Name, e.g. Box"><input name="pkg_factor" placeholder="Quantity, e.g. 24"></div>
+  </div>
+  <p class="help">Leave a row's name blank to skip it. Add more rows by saving and reopening this page.</p>
+
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if item else 'Create item' }}</button><a class="btn" href="{{ url_for('items.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Record a purchase return{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record a purchase return</h1><p>Stock going back to a supplier. Deducted FIFO; reduces what you owe them.</p></div></div>
+<form method="post" class="card" novalidate>{{ csrf() }}
+  <div class="grid2">
+    <div class="field{{ ' has-error' if errors.supplier_id }}"><label for="f-supplier">Supplier</label>
+      <select id="f-supplier" name="supplier_id"><option value="">Choose…</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select>
+      {% if errors.supplier_id %}<p class="err">{{ errors.supplier_id }}</p>{% endif %}</div>
+    <div class="field{{ ' has-error' if errors.location_id }}"><label for="f-location">Location</label>
+      <select id="f-location" name="location_id"><option value="">Choose…</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+      {% if errors.location_id %}<p class="err">{{ errors.location_id }}</p>{% endif %}</div>
+  </div>
+  {{ field('reason', 'Reason', form.get('reason',''), errors, required=True) }}
+  {% if errors.lines %}<p class="err">{{ errors.lines }}</p>{% endif %}
+  <table id="ret-lines"><thead><tr><th>Item</th><th>Quantity</th><th>Unit cost</th><th></th></tr></thead><tbody>
+    <tr><td><select name="ret_item_id"><option value="">Choose…</option>{% for i in items %}<option value="{{ i.id }}">{{ i.name }}</option>{% endfor %}</select></td>
+      <td><input name="ret_qty" style="width:7rem"></td><td><input name="ret_cost" style="width:7rem"></td>
+      <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td></tr>
+  </tbody></table>
+  <div class="actions"><button class="btn sm" type="button" id="add-ret-line">Add item</button></div>
+  <div class="actions"><button class="btn danger solid" type="submit">Record return</button></div>
+</form>
+<template id="ret-line-template"><tr>
+  <td><select name="ret_item_id"><option value="">Choose…</option>{% for i in items %}<option value="{{ i.id }}">{{ i.name }}</option>{% endfor %}</select></td>
+  <td><input name="ret_qty" style="width:7rem"></td><td><input name="ret_cost" style="width:7rem"></td>
+  <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td>
+</tr></template>
+<script>
+document.getElementById('add-ret-line').addEventListener('click', function () {
+  document.querySelector('#ret-lines tbody').appendChild(document.getElementById('ret-line-template').content.cloneNode(true));
+});
+</script>
+{% endblock %}

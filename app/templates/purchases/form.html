@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit ' ~ po.po_number if po else 'New purchase order' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ po.po_number if po else 'New purchase order' }}</h1></div></div>
+<form method="post" class="card" novalidate>{{ csrf() }}
+  <div class="grid2">
+    <div class="field{{ ' has-error' if errors.supplier_id }}"><label for="f-supplier">Supplier<span class="req">*</span></label>
+      {% if po %}<input value="{{ po.supplier.name }}" disabled>
+      {% else %}<select id="f-supplier" name="supplier_id"><option value="">Choose…</option>
+        {% for s in suppliers %}<option value="{{ s.id }}" {% if form.get('supplier_id')|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>{% endif %}
+      {% if errors.supplier_id %}<p class="err">{{ errors.supplier_id }}</p>{% endif %}</div>
+    <div class="field{{ ' has-error' if errors.location_id }}"><label for="f-location">Deliver to<span class="req">*</span></label>
+      {% if po %}<input value="{{ po.location.name }}" disabled>
+      {% else %}<select id="f-location" name="location_id"><option value="">Choose…</option>
+        {% for l in locations %}<option value="{{ l.id }}" {% if form.get('location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select>{% endif %}
+      {% if errors.location_id %}<p class="err">{{ errors.location_id }}</p>{% endif %}</div>
+  </div>
+  {{ field('expected_date', 'Expected delivery', form.get('expected_date',''), errors, type='date') }}
+  <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">{{ form.get('notes','') }}</textarea></div>
+  {% if errors.lines %}<p class="err">{{ errors.lines }}</p>{% endif %}
+  <table id="po-lines"><thead><tr><th>Item</th><th>Quantity</th><th>Unit cost</th><th></th></tr></thead><tbody>
+  {% for ln in lines %}<tr>
+    <td><select name="line_item_id"><option value="">Choose…</option>{% for i in items %}<option value="{{ i.id }}" {% if i.id|string == ln.item_id|string %}selected{% endif %}>{{ i.name }} ({{ i.stock_unit.code }})</option>{% endfor %}</select></td>
+    <td><input name="line_qty" value="{{ ln.quantity }}" style="width:7rem"></td>
+    <td><input name="line_cost" value="{{ ln.unit_cost }}" style="width:7rem" placeholder="per {{ ln.unit_code }}"></td>
+    <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td>
+  </tr>{% endfor %}
+  </tbody></table>
+  <div class="actions"><button class="btn sm" type="button" id="add-po-line">Add item</button></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if po else 'Create draft' }}</button>
+    <a class="btn" href="{{ url_for('purchases.index') }}">Cancel</a></div>
+</form>
+<template id="po-line-template"><tr>
+  <td><select name="line_item_id"><option value="">Choose…</option>{% for i in items %}<option value="{{ i.id }}">{{ i.name }} ({{ i.stock_unit.code }})</option>{% endfor %}</select></td>
+  <td><input name="line_qty" style="width:7rem"></td>
+  <td><input name="line_cost" style="width:7rem"></td>
+  <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td>
+</tr></template>
+<script>
+document.getElementById('add-po-line').addEventListener('click', function () {
+  document.querySelector('#po-lines tbody').appendChild(document.getElementById('po-line-template').content.cloneNode(true));
+});
+</script>
+{% endblock %}

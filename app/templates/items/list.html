@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "macros.html" import pager, status_pill with context %}
+{% block title %}Items{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Items</h1><p>Raw materials, ingredients, semi-finished and finished products, and packaging.</p></div>
+  {% if can('products.manage') %}<a class="btn primary" href="{{ url_for('items.new') }}">Add item</a>{% endif %}</div>
+<form class="filters" method="get">
+  <div class="field"><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Name or SKU"></div>
+  <div class="field"><label for="item_type">Type</label><select id="item_type" name="item_type"><option value="">All</option>
+    {% for t in item_types %}<option value="{{ t }}" {% if item_type == t %}selected{% endif %}>{{ t.replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="category_id">Category</label><select id="category_id" name="category_id"><option value="">All</option>
+    {% for c in categories %}<option value="{{ c.id }}" {% if category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="table-wrap"><table><thead><tr><th>SKU</th><th>Name</th><th>Type</th><th>Category</th><th>Stock unit</th><th>Batches</th><th>Status</th><th></th></tr></thead><tbody>
+{% for i in items %}<tr><td><a href="{{ url_for('items.show', item_id=i.id) }}">{{ i.sku }}</a></td><td>{{ i.name }}</td>
+  <td class="small">{{ i.item_type.replace('_',' ')|capitalize }}</td><td class="small">{{ i.category.name if i.category else '—' }}</td>
+  <td class="small">{{ i.stock_unit.code }}</td><td class="small">{{ 'Yes' if i.track_batches else 'No' }}</td>
+  <td>{{ status_pill(i.is_active) }}</td>
+  <td class="actions-cell">{% if can('products.manage') %}<a class="btn sm" href="{{ url_for('items.edit', item_id=i.id) }}">Edit</a>{% endif %}
+    <a class="btn sm" href="{{ url_for('items.show', item_id=i.id) }}">Stock</a></td>
+</tr>{% else %}<tr><td colspan="8" class="empty">No items match these filters.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

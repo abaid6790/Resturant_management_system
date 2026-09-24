@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>{% include "_head.html" %}<title>{% block title %}{% endblock %} · {{ restaurant_name }}</title></head>
+<body>
+<div class="app">
+  <aside class="side" aria-label="Main navigation">
+    <div class="brand">{{ restaurant_name }}<small>{{ current_branch.name if current_branch else 'All branches' }}</small></div>
+    <nav>
+      {% for group, items in nav %}
+        <h4>{{ group }}</h4>
+        {% for label, endpoint, prefix in items %}
+          <a href="{{ url_for(endpoint) }}" {% if request.endpoint.startswith(prefix) %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      {% endfor %}
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="btn sm menu-btn" type="button" aria-label="Open navigation">Menu</button>
+      <div class="grow"></div>
+      {% if allowed_branches|length > 1 %}
+      <form method="post" action="{{ url_for('auth.switch_branch') }}" style="display:flex;gap:.4rem;align-items:center">
+        {% from "macros.html" import csrf with context %}{{ csrf() }}
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        <label for="branch-switch" class="muted small" style="margin:0;font-weight:400">Branch</label>
+        <select id="branch-switch" name="branch_id" onchange="this.form.submit()" style="width:auto">
+          <option value="all" {% if not current_branch %}selected{% endif %}>All branches</option>
+          {% for b in allowed_branches %}<option value="{{ b.id }}" {% if current_branch and current_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      <span class="small"><strong>{{ current_user.full_name }}</strong> <span class="muted">· {{ current_user.role.name }}</span></span>
+      <a class="btn sm" href="{{ url_for('auth.account_password') }}">Password</a>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        {% from "macros.html" import csrf with context %}{{ csrf() }}
+        <button class="btn sm" type="submit">Sign out</button>
+      </form>
+    </header>
+    <main class="content">{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% include "_toasts.html" %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

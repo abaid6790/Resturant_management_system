@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1><p>Business rules live here rather than in code. Tax, service charge and stock thresholds appear as their modules are added.</p></div></div>
+{% set editable = can('settings.manage') %}
+<form method="post" novalidate>{{ csrf() }}
+{% for group, defs in groups.items() %}
+  <div class="card" style="max-width:44rem"><h2>{{ group }}</h2>
+  {% for d in defs %}
+    <div class="field{{ ' has-error' if errors.get(d.key) }}">
+    {% if d.kind == 'bool' %}
+      <label class="check"><input type="checkbox" name="{{ d.key }}" {% if values.get(d.key) in (True, 'on') %}checked{% endif %} {% if not editable %}disabled{% endif %}> {{ d.label }}</label>
+    {% else %}
+      <label for="s-{{ d.key }}">{{ d.label }}</label>
+      {% if d.kind == 'text' %}<textarea id="s-{{ d.key }}" name="{{ d.key }}" {% if not editable %}disabled{% endif %}>{{ values.get(d.key) or '' }}</textarea>
+      {% elif d.kind == 'choice' %}<select id="s-{{ d.key }}" name="{{ d.key }}" {% if not editable %}disabled{% endif %}>{% for v, l in d.choices %}<option value="{{ v }}" {% if values.get(d.key) == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      {% else %}<input id="s-{{ d.key }}" name="{{ d.key }}" type="{{ 'number' if d.kind == 'int' else 'text' }}" value="{{ values.get(d.key) if values.get(d.key) is not none else '' }}" {% if d.min is not none %}min="{{ d.min }}" max="{{ d.max }}"{% endif %} {% if not editable %}disabled{% endif %}>{% endif %}
+    {% endif %}
+    {% if errors.get(d.key) %}<p class="err" role="alert">{{ errors[d.key] }}</p>{% elif d.help %}<p class="help">{{ d.help }}</p>{% endif %}
+    </div>
+  {% endfor %}</div>
+{% endfor %}
+{% if editable %}<div class="actions"><button class="btn primary" type="submit">Save settings</button></div>{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Purchase orders{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Purchase orders</h1><p>Orders placed with suppliers, and their receiving status.</p></div>
+  {% if can('purchases.create') %}<a class="btn primary" href="{{ url_for('purchases.new') }}">New purchase order</a>{% endif %}</div>
+<form class="filters" method="get">
+  <div class="field"><label for="status">Status</label><select id="status" name="status"><option value="">All</option>
+    {% for st in statuses %}<option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st.replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="supplier_id">Supplier</label><select id="supplier_id" name="supplier_id"><option value="">All</option>
+    {% for s in suppliers %}<option value="{{ s.id }}" {% if supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="table-wrap"><table><thead><tr><th>PO</th><th>Supplier</th><th>Location</th><th>Status</th><th>Order date</th><th></th></tr></thead><tbody>
+{% for po in pos %}<tr><td>{{ po.po_number }}</td><td>{{ po.supplier.name }}</td><td class="small">{{ po.location.name }}</td>
+  <td><span class="pill {{ 'ok' if po.status in ('received','approved','partially_received') else 'bad' if po.status in ('rejected','cancelled') else 'warn' }}">{{ po.status.replace('_',' ') }}</span></td>
+  <td class="small">{{ po.order_date }}</td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('purchases.show', po_id=po.id) }}">Open</a></td>
+</tr>{% else %}<tr><td colspan="6" class="empty">No purchase orders match these filters.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

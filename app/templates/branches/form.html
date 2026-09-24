@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit branch' if branch else 'Add branch' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ branch.name if branch else 'Add branch' }}</h1></div></div>
+<form method="post" class="card" style="max-width:36rem" novalidate>{{ csrf() }}
+  <div class="grid2">{{ field('code', 'Code', form.code, errors, required=True, help='Short and unique, e.g. MAIN or DHA-1.') }}{{ field('name', 'Name', form.name, errors, required=True) }}</div>
+  {{ field('phone', 'Phone', form.phone, errors) }}
+  <div class="field"><label for="f-address">Address</label><textarea id="f-address" name="address">{{ form.address }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if branch else 'Create branch' }}</button><a class="btn" href="{{ url_for('branches.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

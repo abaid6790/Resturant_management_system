@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit category' if category else 'Add category' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ category.name if category else 'Add category' }}</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  {{ field('name', 'Name', form.name, errors, required=True) }}
+  <div class="field"><label for="f-description">Description</label><textarea id="f-description" name="description">{{ form.description }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if category else 'Create category' }}</button><a class="btn" href="{{ url_for('categories.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field(name, label, value='', errors={}, type='text', required=False, help='', autocomplete='off', attrs='') %}
+<div class="field{{ ' has-error' if errors.get(name) }}">
+  <label for="f-{{ name }}">{{ label }}{% if required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <input id="f-{{ name }}" name="{{ name }}" type="{{ type }}" {% if type != 'password' %}value="{{ value or '' }}"{% endif %}
+         {% if required %}required{% endif %} autocomplete="{{ autocomplete }}" {{ attrs|safe }}>
+  {% if errors.get(name) %}<p class="err" role="alert">{{ errors[name] }}</p>{% elif help %}<p class="help">{{ help }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro pager(meta) %}
+{% set f = request.args.to_dict() %}
+<div class="pager">
+  <span>{% if meta.total %}Page {{ meta.page }} of {{ meta.pages }} · {{ meta.total }} result{{ '' if meta.total == 1 else 's' }}{% endif %}</span>
+  <span>
+    {% if meta.page > 1 %}<a class="btn sm" href="{{ url_for(request.endpoint, **dict(f, page=meta.page - 1)) }}">Previous</a>{% endif %}
+    {% if meta.page < meta.pages %}<a class="btn sm" href="{{ url_for(request.endpoint, **dict(f, page=meta.page + 1)) }}">Next</a>{% endif %}
+  </span>
+</div>
+{% endmacro %}
+
+{% macro status_pill(active) %}<span class="pill {{ 'ok' if active else '' }}">{{ 'Active' if active else 'Inactive' }}</span>{% endmacro %}

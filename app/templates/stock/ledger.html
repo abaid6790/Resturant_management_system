@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Stock ledger{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Stock ledger</h1><p>Every stock change, in order. This is the source of truth; balances are derived from it.</p></div></div>
+<form class="filters" method="get">
+  <div class="field"><label for="item_id">Item</label><select id="item_id" name="item_id"><option value="">All</option>{% for i in items %}<option value="{{ i.id }}" {% if f.get('item_id')|string == i.id|string %}selected{% endif %}>{{ i.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="location_id">Location</label><select id="location_id" name="location_id"><option value="">All</option>{% for l in locations %}<option value="{{ l.id }}" {% if f.get('location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="movement_type">Type</label><select id="movement_type" name="movement_type"><option value="">All</option>{% for t in movement_types %}<option value="{{ t }}" {% if f.get('movement_type') == t %}selected{% endif %}>{{ t.replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>Item</th><th>Location</th><th>Type</th><th class="num">Qty</th>{% if can_costs %}<th class="num">Unit cost</th>{% endif %}<th class="num">Balance after</th><th>By</th><th>Reason / ref</th></tr></thead><tbody>
+{% for m in entries %}<tr><td class="small" style="white-space:nowrap">{{ m.created_at|dt('%d %b %Y, %H:%M') }}</td>
+  <td>{{ m.item.name }}</td><td class="small">{{ m.location.name }}</td><td><span class="pill {{ 'ok' if m.qty > 0 else 'bad' }}">{{ m.movement_type.replace('_',' ') }}</span></td>
+  <td class="num">{{ '+' if m.qty > 0 else '' }}{{ m.qty }} {{ m.item.stock_unit.code }}</td>
+  {% if can_costs %}<td class="num">{{ m.unit_cost }}</td>{% endif %}
+  <td class="num">{{ m.new_balance }}</td><td class="small">{{ m.user.full_name if m.user else '—' }}</td>
+  <td class="small">{{ m.reason or '' }}{% if m.reference_type %} <span class="muted">({{ m.reference_type }}{% if m.reference_id %} #{{ m.reference_id }}{% endif %})</span>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="9" class="empty">No stock movements match these filters.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

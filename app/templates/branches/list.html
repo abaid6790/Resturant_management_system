@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, status_pill with context %}
+{% block title %}Branches{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Branches</h1><p>Each branch keeps its own tables, stock, sales and cash. Branches are deactivated, never deleted, so history stays intact.</p></div>
+  <a class="btn primary" href="{{ url_for('branches.new') }}">Add branch</a></div>
+<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Phone</th><th>Status</th><th></th></tr></thead><tbody>
+{% for b in branches %}<tr><td><strong>{{ b.code }}</strong></td><td>{{ b.name }}{% if b.address %}<br><span class="muted small">{{ b.address }}</span>{% endif %}</td>
+  <td>{{ b.phone or '—' }}</td><td>{{ status_pill(b.is_active) }}</td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('branches.edit', branch_id=b.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('branches.status', branch_id=b.id) }}">{{ csrf() }}<input type="hidden" name="active" value="{{ 0 if b.is_active else 1 }}">
+    {% if b.is_active %}<button class="btn sm danger" type="submit" data-confirm="Deactivate {{ b.name }}? It will disappear from branch pickers; its history is kept." data-confirm-label="Deactivate">Deactivate</button>
+    {% else %}<button class="btn sm" type="submit">Activate</button>{% endif %}</form></td></tr>
+{% else %}<tr><td colspan="5" class="empty">No branches yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

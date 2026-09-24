@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Batches{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Batches on hand</h1><p>FIFO cost layers. Oldest batches are consumed first.</p></div>
+  <a class="btn {{ 'primary' if f.get('expiring') == '1' }}" href="{{ url_for('stock.batches', expiring=1) }}">Expiring soonest</a></div>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Location</th><th>Batch</th><th class="num">Remaining</th><th class="num">Unit cost</th><th>Received</th><th>Expires</th></tr></thead><tbody>
+{% for b in rows %}<tr><td>{{ b.item.name }}</td><td class="small">{{ b.location.name }}</td><td class="small">{{ b.batch_no }}</td>
+  <td class="num">{{ b.qty_remaining }} {{ b.item.stock_unit.code }}</td><td class="num">{{ b.unit_cost }}</td>
+  <td class="small">{{ b.received_at|dt('%d %b %Y') }}</td>
+  <td class="small">{% if b.expiry_date %}{{ b.expiry_date.strftime('%d %b %Y') }}{% else %}—{% endif %}</td>
+</tr>{% else %}<tr><td colspan="7" class="empty">No batches on hand.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

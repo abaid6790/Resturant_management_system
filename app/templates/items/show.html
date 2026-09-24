@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ item.name }}</h1><p>{{ item.sku }} · {{ item.item_type.replace('_',' ')|capitalize }} · tracked in {{ item.stock_unit.name }}</p></div>
+  {% if can('products.manage') %}<a class="btn" href="{{ url_for('items.edit', item_id=item.id) }}">Edit item</a>{% endif %}
+  {% if can('recipes.view') and item.item_type in ('finished_product','semi_finished') %}<a class="btn" href="{{ url_for('recipes.edit', item_id=item.id) }}">Recipe</a>{% endif %}</div>
+<div class="card"><h2>Stock by location</h2>
+<div class="table-wrap"><table><thead><tr><th>Location</th><th class="num">Balance</th>{% if can('inventory.view_costs') %}<th class="num">Unit cost</th><th class="num">Value</th>{% endif %}<th>Status</th></tr></thead><tbody>
+{% for loc in locations %}{% set b = balances[loc.id] %}<tr><td>{{ loc.name }}</td><td class="num">{{ b.balance if b.balance is not none else '0.0000' }} {{ item.stock_unit.code }}</td>
+  {% if can('inventory.view_costs') %}<td class="num">{{ b.cost if b.cost else '—' }}</td><td class="num">{{ (b.cost * b.balance)|round(2) if b.cost and b.balance else '—' }}</td>{% endif %}
+  <td>{% if b.balance is not none and item.min_stock and b.balance <= item.reorder_level %}<span class="pill warn">Reorder</span>{% elif b.balance is not none and b.balance <= item.min_stock %}<span class="pill bad">Low</span>{% else %}<span class="pill ok">OK</span>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div></div>
+{% if item.packaging_units %}<div class="card"><h2>Packaging units</h2><ul>{% for p in item.packaging_units %}<li>1 {{ p.name }} = {{ p.factor_to_stock_unit }} {{ item.stock_unit.code }}</li>{% endfor %}</ul></div>{% endif %}
+<p><a href="{{ url_for('stock.ledger', item_id=item.id) }}">View this item's stock ledger</a></p>
+{% endblock %}

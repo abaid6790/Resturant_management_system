@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import pager, status_pill with context %}
+{% block title %}Suppliers{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Suppliers</h1><p>Who you buy from, and what's owed to each.</p></div>
+  {% if can('suppliers.manage') %}<a class="btn primary" href="{{ url_for('suppliers.new') }}">Add supplier</a>{% endif %}</div>
+<form class="filters" method="get"><div class="field"><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}"></div><button class="btn" type="submit">Apply</button></form>
+<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Contact</th><th>Terms</th><th class="num">Balance owed</th><th>Status</th><th></th></tr></thead><tbody>
+{% for s in suppliers %}<tr><td>{{ s.code }}</td><td><a href="{{ url_for('suppliers.show', supplier_id=s.id) }}">{{ s.name }}</a></td>
+  <td class="small">{{ s.phone or s.email or '—' }}</td><td class="small">{{ s.payment_terms_days }} days</td>
+  <td class="num">{{ balance(s.id) }}</td><td>{{ status_pill(s.is_active) }}</td>
+  <td class="actions-cell">{% if can('suppliers.manage') %}<a class="btn sm" href="{{ url_for('suppliers.edit', supplier_id=s.id) }}">Edit</a>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="7" class="empty">No suppliers yet.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

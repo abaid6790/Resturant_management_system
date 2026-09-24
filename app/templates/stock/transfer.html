@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Transfer stock{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Transfer stock</h1><p>Moves stock between locations, including across branches, keeping the original cost of each batch.</p></div></div>
+<form method="post" class="card" style="max-width:36rem" novalidate>{{ csrf() }}
+  <div class="field"><label for="f-item_id">Item</label><select id="f-item_id" name="item_id" required>
+    <option value="">Choose an item…</option>{% for i in items %}<option value="{{ i.id }}" {% if form.get('item_id')|string == i.id|string %}selected{% endif %}>{{ i.name }} ({{ i.sku }})</option>{% endfor %}</select></div>
+  <div class="grid2">
+    <div class="field"><label for="f-from_location_id">From</label><select id="f-from_location_id" name="from_location_id" required>
+      <option value="">Choose…</option>{% for l in locations %}<option value="{{ l.id }}" {% if form.get('from_location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-to_location_id">To</label><select id="f-to_location_id" name="to_location_id" required>
+      <option value="">Choose…</option>{% for l in locations %}<option value="{{ l.id }}" {% if form.get('to_location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+  </div>
+  {{ field('quantity', 'Quantity', form.get('quantity',''), errors, required=True) }}
+  {{ field('reason', 'Note', form.get('reason',''), errors) }}
+  <div class="actions"><button class="btn primary" type="submit">Post transfer</button></div>
+</form>
+{% endblock %}

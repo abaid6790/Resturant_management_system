@@ -1,0 +1,14 @@
+<div class="toasts" aria-live="polite">
+{% for category, message in get_flashed_messages(with_categories=true) %}
+  <div class="toast {{ category }}" {% if category == 'error' %}role="alert"{% endif %}><span>{{ message }}</span><button type="button" aria-label="Dismiss">✕</button></div>
+{% endfor %}
+</div>
+<dialog id="confirm-dialog">
+  <form method="dialog">
+    <p data-msg style="margin-top:0"></p>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn danger solid" value="ok">Confirm</button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}{{ po.po_number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ po.po_number }}</h1>
+  <p>{{ po.supplier.name }} · {{ po.location.name }} ·
+    <span class="pill {{ 'ok' if po.status in ('received','approved','partially_received') else 'bad' if po.status in ('rejected','cancelled') else 'warn' }}">{{ po.status.replace('_',' ') }}</span></p></div>
+  <div class="actions" style="margin:0">
+    {% if po.status == 'draft' and can('purchases.create') %}<a class="btn" href="{{ url_for('purchases.edit', po_id=po.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('purchases.submit', po_id=po.id) }}">{{ csrf() }}<button class="btn primary" type="submit">Submit</button></form>{% endif %}
+    {% if po.status == 'submitted' and can('purchases.approve') %}
+      <form method="post" action="{{ url_for('purchases.approve', po_id=po.id) }}">{{ csrf() }}<button class="btn primary" type="submit">Approve</button></form>
+      <button class="btn danger" type="button" onclick="document.getElementById('reject-dlg').showModal()">Reject</button>{% endif %}
+    {% if po.status in ('draft','submitted','approved') and can('purchases.create') %}
+      <button class="btn danger" type="button" onclick="document.getElementById('cancel-dlg').showModal()">Cancel</button>{% endif %}
+  </div></div>
+{% if po.status == 'submitted' and require_approval %}<div class="banner">Awaiting approval before it can be received.</div>{% endif %}
+{% if po.rejected_reason %}<div class="banner">Rejected: {{ po.rejected_reason }}</div>{% endif %}
+{% if po.cancelled_reason %}<div class="banner">Cancelled: {{ po.cancelled_reason }}</div>{% endif %}
+
+<div class="card"><h2>Items</h2>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th class="num">Ordered</th><th class="num">Received</th><th class="num">Outstanding</th><th class="num">Unit cost</th></tr></thead><tbody>
+{% for line in po.lines %}<tr><td>{{ line.item.name }}</td><td class="num">{{ line.quantity_ordered }} {{ line.item.stock_unit.code }}</td>
+  <td class="num">{{ line.quantity_received }}</td><td class="num">{{ line.quantity_ordered - line.quantity_received }}</td>
+  <td class="num">{{ line.unit_cost }}</td></tr>{% endfor %}</tbody></table></div></div>
+
+{% if po.status in ('approved','partially_received') and can('purchases.receive') %}
+<div class="card"><h2>Receive stock</h2>
+<form method="post" action="{{ url_for('purchases.receive', po_id=po.id) }}">{{ csrf() }}
+  <div class="field"><label for="ref">Delivery reference</label><input id="ref" name="reference" placeholder="e.g. delivery note number"></div>
+  <table><thead><tr><th>Item</th><th>Outstanding</th><th>Receive now</th><th>Unit cost</th><th>Batch no.</th><th>Expiry</th></tr></thead><tbody>
+  {% for line in po.lines %}{% set outstanding = line.quantity_ordered - line.quantity_received %}
+  {% if outstanding > 0 %}<tr>
+    <td>{{ line.item.name }}<input type="hidden" name="recv_line_id" value="{{ line.id }}"></td>
+    <td class="num">{{ outstanding }} {{ line.item.stock_unit.code }}</td>
+    <td><input name="recv_qty" placeholder="0" style="width:6rem"></td>
+    <td><input name="recv_cost" value="{{ line.unit_cost }}" style="width:6rem"></td>
+    <td><input name="recv_batch" style="width:8rem"></td>
+    <td><input name="recv_expiry" type="date" style="width:9rem"></td>
+  </tr>{% endif %}{% endfor %}
+  </tbody></table>
+  <div class="actions"><button class="btn primary" type="submit">Post receipt</button></div>
+</form></div>
+{% endif %}
+
+{% if receipts %}<div class="card"><h2>Receiving history</h2>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>By</th><th>Reference</th><th class="num">Lines</th></tr></thead><tbody>
+{% for r in receipts %}<tr><td class="small">{{ r.received_at|dt }}</td><td class="small">{{ r.received_by }}</td>
+  <td class="small">{{ r.reference or '' }}</td><td class="num">{{ r.lines|length }}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+
+{% if po.status in ('partially_received','received') and can('purchases.pay') %}
+<div class="card"><h2>Record supplier invoice</h2>
+<form method="post" action="{{ url_for('purchases.invoice', po_id=po.id) }}" class="grid2" style="align-items:end">{{ csrf() }}
+  <div class="field"><label for="inv-num">Invoice number</label><input id="inv-num" name="invoice_number" required></div>
+  <div class="field"><label for="inv-sub">Subtotal</label><input id="inv-sub" name="subtotal" required></div>
+  <div class="field"><label for="inv-tax">Tax</label><input id="inv-tax" name="tax_total" placeholder="0.00"></div>
+  <div class="field"><label for="inv-disc">Discount</label><input id="inv-disc" name="discount_total" placeholder="0.00"></div>
+  <div class="field" style="grid-column:1/-1"><button class="btn primary" type="submit">Record invoice</button></div>
+</form></div>
+{% endif %}
+{% if invoices %}<div class="card"><h2>Invoices</h2>
+<div class="table-wrap"><table><thead><tr><th>Number</th><th>Due</th><th class="num">Total</th><th>Status</th></tr></thead><tbody>
+{% for i in invoices %}<tr><td>{{ i.invoice_number }}</td><td class="small">{{ i.due_date }}</td><td class="num">{{ i.total }}</td>
+  <td><span class="pill {{ 'ok' if i.status == 'paid' else 'warn' if i.status == 'partial' else 'bad' }}">{{ i.status }}</span></td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+
+<dialog id="reject-dlg"><form method="post" action="{{ url_for('purchases.reject', po_id=po.id) }}">{{ csrf() }}
+  <p style="margin-top:0">Reason for rejecting {{ po.po_number }}</p><input name="reason" required style="width:100%">
+  <div class="actions" style="justify-content:flex-end"><button class="btn" type="button" onclick="document.getElementById('reject-dlg').close()">Cancel</button>
+    <button class="btn danger solid" type="submit">Reject</button></div></form></dialog>
+<dialog id="cancel-dlg"><form method="post" action="{{ url_for('purchases.cancel', po_id=po.id) }}">{{ csrf() }}
+  <p style="margin-top:0">Reason for cancelling {{ po.po_number }}</p><input name="reason" required style="width:100%">
+  <div class="actions" style="justify-content:flex-end"><button class="btn" type="button" onclick="document.getElementById('cancel-dlg').close()">Back</button>
+    <button class="btn danger solid" type="submit">Cancel order</button></div></form></dialog>
+{% endblock %}

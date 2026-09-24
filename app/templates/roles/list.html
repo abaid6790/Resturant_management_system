@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Roles{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Roles</h1><p>A role is a named set of permissions. Changes apply to signed-in users immediately.</p></div>
+  <a class="btn primary" href="{{ url_for('roles.new') }}">Add role</a></div>
+<div class="table-wrap"><table><thead><tr><th>Role</th><th>Description</th><th class="num">Permissions</th><th class="num">Users</th><th></th></tr></thead><tbody>
+{% for r, n in rows %}<tr>
+  <td><strong>{{ r.name }}</strong> {% if r.is_super %}<span class="pill info">Full access</span>{% elif r.is_system %}<span class="pill">System</span>{% endif %}</td>
+  <td class="muted">{{ r.description or '' }}</td>
+  <td class="num">{{ 'All' if r.is_super else r.permissions|length }}</td><td class="num">{{ n }}</td>
+  <td class="actions-cell">{% if not r.is_super %}<a class="btn sm" href="{{ url_for('roles.edit', role_id=r.id) }}">Edit</a>{% endif %}
+    {% if not r.is_system and n == 0 %}<form method="post" action="{{ url_for('roles.delete', role_id=r.id) }}">{{ csrf() }}<button class="btn sm danger" type="submit" data-confirm="Delete the role {{ r.name }}?" data-confirm-label="Delete">Delete</button></form>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% endblock %}

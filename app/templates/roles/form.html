@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit ' ~ role.name if role else 'Add role' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ role.name if role else 'Add role' }}</h1>
+  <p>Tick what people in this role may do. Permissions marked <span class="pill warn">Sensitive</span> can move money, stock or access.</p></div></div>
+{% if readonly %}<div class="banner">This role grants more access than you have, so you can view it but not change it.</div>{% endif %}
+<form method="post" novalidate>{{ csrf() }}
+  <div class="card" style="max-width:44rem">
+    {% if role and role.is_system %}<div class="field"><label>Name</label><input value="{{ role.name }}" disabled><p class="help">System role names are fixed.</p></div>
+    {% else %}{{ field('name', 'Name', form.name, errors, required=True) }}{% endif %}
+    {{ field('description', 'Description', form.description, errors) }}
+  </div>
+  {% if errors.permissions %}<p class="err">{{ errors.permissions }}</p>{% endif %}
+  {% for module, items in catalog.items() %}
+  <fieldset class="perm-group"><legend>{{ module }}</legend><div class="cols">
+    {% for code, label, sensitive in items %}
+      {% set have = code in form.permissions %}{% set allowed = code in mine %}
+      <label class="check" title="{{ code }}"><input type="checkbox" name="permissions" value="{{ code }}" {% if have %}checked{% endif %} {% if readonly or (not allowed and not have) or (not allowed and have) %}disabled{% endif %}>
+        <span>{{ label }} {% if sensitive %}<span class="pill warn">Sensitive</span>{% endif %}</span></label>
+    {% endfor %}</div></fieldset>
+  {% endfor %}
+  {% if not readonly %}<div class="actions"><button class="btn primary" type="submit">{{ 'Save role' if role else 'Create role' }}</button><a class="btn" href="{{ url_for('roles.index') }}">Cancel</a></div>
+  {% else %}<div class="actions"><a class="btn" href="{{ url_for('roles.index') }}">Back</a></div>{% endif %}
+</form>
+{% endblock %}

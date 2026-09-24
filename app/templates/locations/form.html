@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit location' if location else 'Add location' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ location.name if location else 'Add location' }}</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch_id">Branch<span class="req">*</span></label>
+    <select id="f-branch_id" name="branch_id"><option value="">Choose…</option>
+      {% for b in branches %}<option value="{{ b.id }}" {% if form.branch_id|string == b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  {{ field('name', 'Name', form.name, errors, required=True) }}
+  <div class="field"><label for="f-location_type">Type</label><select id="f-location_type" name="location_type">
+    {% for t in ('store','kitchen','warehouse','bar') %}<option value="{{ t }}" {% if form.location_type == t %}selected{% endif %}>{{ t|capitalize }}</option>{% endfor %}</select></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if location else 'Create location' }}</button><a class="btn" href="{{ url_for('locations.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

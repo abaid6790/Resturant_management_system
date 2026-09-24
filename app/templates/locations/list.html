@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, status_pill with context %}
+{% block title %}Locations{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Locations</h1><p>Warehouses, kitchens, stores and bars. Stock and transfers happen between these.</p></div>
+  <a class="btn primary" href="{{ url_for('locations.new') }}">Add location</a></div>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Branch</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody>
+{% for l in locations %}<tr><td><strong>{{ l.name }}</strong></td><td>{{ l.branch.name }}</td><td class="small">{{ l.location_type|capitalize }}</td>
+  <td>{{ status_pill(l.is_active) }}</td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('locations.edit', location_id=l.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('locations.status', location_id=l.id) }}">{{ csrf() }}
+      <input type="hidden" name="active" value="{{ 0 if l.is_active else 1 }}">
+      <button class="btn sm {{ 'danger' if l.is_active else '' }}" type="submit">{{ 'Deactivate' if l.is_active else 'Activate' }}</button></form></td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No locations yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Home{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Welcome, {{ current_user.full_name.split(' ')[0] }}</h1>
+<p>{{ current_user.role.name }} · {{ current_branch.name if current_branch else 'all branches' }}</p></div></div>
+<div class="card"><h2>Your access</h2>
+  <p style="margin:0">Role <strong>{{ current_user.role.name }}</strong> with <strong>{{ perm_count }}</strong> permissions across
+  {% if current_user.all_branches or current_user.is_super %}<strong>all branches</strong>{% else %}<strong>{{ allowed_branches|length }}</strong> branch{{ '' if allowed_branches|length == 1 else 'es' }}{% endif %}.
+  {% if stats.users is defined %} There {{ 'is' if stats.users == 1 else 'are' }} <strong>{{ stats.users }}</strong> active user{{ '' if stats.users == 1 else 's' }}.{% endif %}</p>
+</div>
+{% if recent %}
+<div class="card"><h2>Recent activity</h2>
+  <div class="table-wrap"><table><thead><tr><th>When</th><th>Who</th><th>Action</th></tr></thead><tbody>
+  {% for e in recent %}<tr><td class="small">{{ e.created_at|dt }}</td><td>{{ e.username or '—' }}</td><td>{{ e.action }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <p class="small" style="margin-bottom:0"><a href="{{ url_for('audit.index') }}">Open the full audit log</a></p>
+</div>
+{% endif %}
+{% endblock %}

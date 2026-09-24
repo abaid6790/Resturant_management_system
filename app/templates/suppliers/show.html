@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, pager with context %}
+{% block title %}{{ supplier.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ supplier.name }}</h1><p>{{ supplier.code }} · {{ supplier.payment_terms_days }} day terms</p></div>
+  {% if can('suppliers.manage') %}<a class="btn" href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}">Edit</a>{% endif %}</div>
+<div class="card"><h2>Balance owed</h2><p style="font-size:1.4rem;font-weight:650;margin:0">{{ balance }}</p></div>
+{% if can_pay %}<div class="card"><h2>Record a payment</h2>
+<form method="post" action="{{ url_for('suppliers.pay', supplier_id=supplier.id) }}" class="grid2" style="align-items:end">{{ csrf() }}
+  <div class="field"><label for="p-amount">Amount</label><input id="p-amount" name="amount" required></div>
+  <div class="field"><label for="p-method">Method</label><select id="p-method" name="method">
+    {% for m in ('cash','card','bank_transfer','mobile_wallet','cheque') %}<option value="{{ m }}">{{ m.replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="p-invoice">Invoice (optional)</label><input id="p-invoice" name="invoice_id" placeholder="Invoice ID"></div>
+  <div class="field"><label for="p-ref">Reference</label><input id="p-ref" name="reference"></div>
+  <div class="field" style="grid-column:1/-1"><button class="btn primary" type="submit">Record payment</button></div>
+</form></div>{% endif %}
+{% if recent_pos %}<div class="card"><h2>Recent purchase orders</h2>
+<div class="table-wrap"><table><thead><tr><th>PO</th><th>Status</th><th>Date</th></tr></thead><tbody>
+{% for po in recent_pos %}<tr><td><a href="{{ url_for('purchases.show', po_id=po.id) }}">{{ po.po_number }}</a></td>
+  <td><span class="pill {{ 'ok' if po.status in ('received','approved') else 'bad' if po.status in ('rejected','cancelled') else 'warn' }}">{{ po.status.replace('_',' ') }}</span></td>
+  <td class="small">{{ po.order_date }}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+<div class="card"><h2>Ledger</h2>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>Type</th><th class="num">Amount</th><th class="num">Balance after</th><th>Notes</th></tr></thead><tbody>
+{% for e in entries %}<tr><td class="small">{{ e.created_at|dt }}</td><td><span class="pill {{ 'bad' if e.amount > 0 else 'ok' }}">{{ e.entry_type }}</span></td>
+  <td class="num">{{ '+' if e.amount > 0 else '' }}{{ e.amount }}</td><td class="num">{{ e.new_balance }}</td><td class="small">{{ e.notes or '' }}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No ledger activity yet.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}</div>
+{% endblock %}

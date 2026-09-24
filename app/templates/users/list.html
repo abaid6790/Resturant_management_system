@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, pager, status_pill with context %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Users</h1><p>People who can sign in, and what they can reach.</p></div>
+  {% if can('users.manage') %}<a class="btn primary" href="{{ url_for('users.new') }}">Add user</a>{% endif %}</div>
+<form class="filters" method="get">
+  <div class="field"><label for="q">Search</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Name, username or email"></div>
+  <div class="field"><label for="role_id">Role</label><select id="role_id" name="role_id"><option value="">All roles</option>
+    {% for r in all_roles %}<option value="{{ r.id }}" {% if role_id == r.id %}selected{% endif %}>{{ r.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="status">Status</label><select id="status" name="status">
+    <option value="">Any</option><option value="active" {% if status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option></select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Branches</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}<tr>
+    <td><strong>{{ u.full_name }}</strong>{% if u.email %}<br><span class="muted small">{{ u.email }}</span>{% endif %}</td>
+    <td>{{ u.username }}</td><td>{{ u.role.name }}</td>
+    <td>{% if u.all_branches or u.is_super %}All branches{% else %}{{ u.branches|map(attribute='name')|join(', ') or '—' }}{% endif %}</td>
+    <td>{{ status_pill(u.is_active) }}{% if u.locked_until and u.locked_until > now_utc %} <span class="pill bad">Locked</span>{% endif %}</td>
+    <td class="small">{{ (u.last_login_at|dt) if u.last_login_at else 'Never' }}</td>
+    <td class="actions-cell">{% if can('users.manage') %}<a class="btn sm" href="{{ url_for('users.edit', user_id=u.id) }}">Edit</a>
+      {% if u.id != current_user.id %}<form method="post" action="{{ url_for('users.status', user_id=u.id) }}">{{ csrf() }}
+        <input type="hidden" name="active" value="{{ 0 if u.is_active else 1 }}">
+        {% if u.is_active %}<button class="btn sm danger" type="submit" data-confirm="Deactivate {{ u.full_name }}? They will be signed out and unable to sign in." data-confirm-label="Deactivate">Deactivate</button>
+        {% else %}<button class="btn sm" type="submit">Activate</button>{% endif %}</form>{% endif %}{% endif %}</td>
+  </tr>{% else %}<tr><td colspan="7" class="empty">No users match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

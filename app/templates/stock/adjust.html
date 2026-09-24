@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Adjust stock{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Adjust stock</h1><p>Use a positive quantity to receive stock in (e.g. opening balances), or negative to remove it. A reason is always required.</p></div></div>
+<form method="post" class="card" style="max-width:36rem" novalidate>{{ csrf() }}
+  <div class="field"><label for="f-item_id">Item</label><select id="f-item_id" name="item_id" required>
+    <option value="">Choose an item…</option>{% for i in items %}<option value="{{ i.id }}" {% if form.get('item_id')|string == i.id|string %}selected{% endif %}>{{ i.name }} ({{ i.sku }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="f-location_id">Location</label><select id="f-location_id" name="location_id" required>
+    <option value="">Choose a location…</option>{% for l in locations %}<option value="{{ l.id }}" {% if form.get('location_id')|string == l.id|string %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+  {{ field('delta', 'Quantity change', form.get('delta',''), errors, required=True, help='Positive to add stock, negative to remove it, e.g. 10 or -2.5.') }}
+  {{ field('unit_cost', 'Unit cost', form.get('unit_cost',''), errors, help='Only used when adding stock. Leave blank to use the current average cost.') }}
+  {{ field('reason', 'Reason', form.get('reason',''), errors, required=True, help='e.g. Opening stock, stock count correction, damaged goods.') }}
+  <div class="actions"><button class="btn primary" type="submit">Post adjustment</button></div>
+</form>
+{% endblock %}

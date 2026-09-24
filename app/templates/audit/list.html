@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Audit log</h1><p>Every important action, who did it and what changed. Entries cannot be edited or deleted.</p></div></div>
+<form class="filters" method="get">
+  <div class="field"><label for="from">From</label><input id="from" type="date" name="from" value="{{ f.get('from','') }}"></div>
+  <div class="field"><label for="to">To</label><input id="to" type="date" name="to" value="{{ f.get('to','') }}"></div>
+  <div class="field"><label for="user">User</label><input id="user" type="search" name="user" value="{{ f.get('user','') }}" placeholder="Username"></div>
+  <div class="field"><label for="module">Module</label><select id="module" name="module"><option value="">All</option>{% for m in modules %}<option {% if f.get('module') == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="action">Action starts with</label><input id="action" name="action" value="{{ f.get('action','') }}" placeholder="e.g. user."></div>
+  <div class="field"><label for="q">Record id / reference</label><input id="q" name="q" value="{{ f.get('q','') }}"></div>
+  <button class="btn" type="submit">Apply</button><a class="btn" href="{{ url_for('audit.index') }}">Reset</a>
+</form>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
+{% for e in entries %}<tr>
+  <td class="small" style="white-space:nowrap">{{ e.created_at|dt('%d %b %Y, %H:%M:%S') }}</td>
+  <td>{{ e.username or '—' }}<br><span class="muted small">{{ e.ip or '' }}</span></td>
+  <td><strong>{{ e.action }}</strong><br><span class="muted small">{{ e.module }}</span></td>
+  <td class="small">{% if e.record_type %}{{ e.record_type }} #{{ e.record_id }}{% else %}—{% endif %}{% if e.reference %}<br>{{ e.reference }}{% endif %}</td>
+  <td>{% if e.before or e.after %}<details><summary>View change</summary>
+    {% if e.before %}<pre class="diff">Before: {{ e.before | tojson(indent=1) }}</pre>{% endif %}{% if e.after %}<pre class="diff">After: {{ e.after | tojson(indent=1) }}</pre>{% endif %}</details>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No entries match these filters.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}
