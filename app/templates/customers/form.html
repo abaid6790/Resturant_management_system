@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit customer' if customer else 'Add customer' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ customer.name if customer else 'Add customer' }}</h1></div></div>
+<form method="post" class="card" style="max-width:30rem" novalidate>{{ csrf() }}
+  {{ field('name', 'Name', form.name, errors, required=True) }}
+  {{ field('phone', 'Phone', form.phone, errors) }}
+  {{ field('email', 'Email', form.email, errors) }}
+  <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">{{ form.notes }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if customer else 'Add customer' }}</button><a class="btn" href="{{ url_for('customers.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

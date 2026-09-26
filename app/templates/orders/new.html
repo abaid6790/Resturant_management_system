@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}New order{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New order</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.order_type }}"><label for="order-type-select">Order type</label>
+    <select id="order-type-select" name="order_type">{% for t in order_types %}
+      <option value="{{ t }}" {% if request.args.get('order_type', form.get('order_type')) == t %}selected{% endif %}>{{ t.replace('_',' ')|capitalize }}</option>{% endfor %}</select>
+    {% if errors.order_type %}<p class="err">{{ errors.order_type }}</p>{% endif %}</div>
+  <div class="field{{ ' has-error' if errors.location_id }}"><label for="f-location">Location (fulfils from stock)</label>
+    <select id="f-location" name="location_id"><option value="">Choose…</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+    {% if errors.location_id %}<p class="err">{{ errors.location_id }}</p>{% endif %}</div>
+  <div id="table-field" class="field{{ ' has-error' if errors.table_id }}"><label for="f-table">Table</label>
+    <select id="f-table" name="table_id"><option value="">Choose…</option>{% for t in tables %}
+      <option value="{{ t.id }}" {% if request.args.get('table_id')|string == t.id|string %}selected{% endif %}>{{ t.floor.name }} · {{ t.name }} ({{ t.capacity }} seats)</option>{% endfor %}</select>
+    {% if errors.table_id %}<p class="err">{{ errors.table_id }}</p>{% endif %}</div>
+  {{ field('guest_count', 'Guests', form.get('guest_count',''), errors, help='Optional.') }}
+  <div class="field"><label for="f-customer">Customer</label><select id="f-customer" name="customer_id"><option value="">Walk-in</option>
+    {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+  <div class="actions"><button class="btn primary" type="submit">Start order</button><a class="btn" href="{{ url_for('orders.index') }}">Cancel</a></div>
+</form>
+<script>
+(function(){
+  var sel = document.getElementById('order-type-select'), tf = document.getElementById('table-field');
+  function sync(){ tf.style.display = sel.value === 'dine_in' ? '' : 'none'; }
+  sel.addEventListener('change', sync); sync();
+})();
+</script>
+{% endblock %}

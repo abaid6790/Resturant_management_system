@@ -49,6 +49,13 @@ NAV = [
         ("Transfer stock", "stock.transfer", "stock.transfer", "inventory.transfer"),
         ("Record wastage", "stock.wastage", "stock.wastage", "inventory.wastage"),
     ]),
+    ("POS", [
+        ("Take an order", "orders.new", "orders.new", "pos.sell"),
+        ("Open orders", "orders.index", "orders.index", "orders.view_all"),
+        ("Floors and tables", "floors.index", "floors.", "tables.view"),
+        ("Customers", "customers.index", "customers.", "customers.view"),
+        ("Cash register", "cash.index", "cash.", "cash.session"),
+    ]),
     ("Purchasing", [
         ("Suppliers", "suppliers.index", "suppliers.", "suppliers.view"),
         ("Purchase orders", "purchases.index", "purchases.", "purchases.view"),

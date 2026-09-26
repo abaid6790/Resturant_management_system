@@ -19,7 +19,7 @@ def test_update_validates_saves_and_audits(env):
             "currency.symbol": "Rs", "currency.symbol_position": "before", "security.session_idle_minutes": "60",
             "security.max_failed_logins": "4", "security.lockout_minutes": "10",
             "security.password_min_length": "10", "receipt.show_tax_id": "on",
-            "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0"}
+            "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0", "tax.rate_pct": "0", "service_charge.percent": "0", "service_charge.taxable": "off", "service_charge.dine_in_only": "on", "pos.order_number_prefix": "ORD", "pos.invoice_number_prefix": "INV", "pos.default_delivery_charge": "0.00", "pos.cash_requires_open_session": "on", "pos.discount_limit_pct": "20"}
     assert post(c, "/admin/settings", good).status_code == 302
     with app.app_context():
         assert svc.get("currency.code") == "PKR" and svc.get("security.session_idle_minutes") == 60
@@ -36,7 +36,7 @@ def test_invalid_settings_change_nothing(env):
     bad = {"restaurant.name": "New Name", "locale.timezone": "Mars/Base", "currency.code": "DOLLARS",
            "currency.symbol": "$", "security.session_idle_minutes": "2", "security.max_failed_logins": "abc",
            "security.lockout_minutes": "10", "security.password_min_length": "8",
-           "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0"}
+           "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0", "tax.rate_pct": "0", "service_charge.percent": "0", "service_charge.taxable": "off", "service_charge.dine_in_only": "on", "pos.order_number_prefix": "ORD", "pos.invoice_number_prefix": "INV", "pos.default_delivery_charge": "0.00", "pos.cash_requires_open_session": "on", "pos.discount_limit_pct": "20"}
     r = post(c, "/admin/settings", bad)
     html = r.get_data(as_text=True)
     assert r.status_code == 422 and "Unknown time zone" in html and "three-letter" in html
@@ -52,7 +52,7 @@ def test_settings_actually_drive_behaviour(env):
     base = {"restaurant.name": "R", "locale.timezone": "UTC", "currency.code": "USD", "currency.symbol": "$",
             "currency.symbol_position": "before", "security.session_idle_minutes": "480",
             "security.max_failed_logins": "3", "security.lockout_minutes": "10", "security.password_min_length": "8",
-            "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0"}
+            "inventory.low_stock_warning_pct": "120", "inventory.expiry_warning_days": "7", "purchasing.default_payment_terms_days": "0", "tax.rate_pct": "0", "service_charge.percent": "0", "service_charge.taxable": "off", "service_charge.dine_in_only": "on", "pos.order_number_prefix": "ORD", "pos.invoice_number_prefix": "INV", "pos.default_delivery_charge": "0.00", "pos.cash_requires_open_session": "on", "pos.discount_limit_pct": "20"}
     post(c, "/admin/settings", base)
     anon = app.test_client()
     from tests.helpers import csrf

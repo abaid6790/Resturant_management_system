@@ -38,3 +38,33 @@ def purchasing_setup(app, branch_ids):
         db.session.add(supplier)
         db.session.commit()
         return supplier.id
+
+
+def pos_setup(app, branch_ids, x):
+    """Adds a floor+table and a sellable item with a recipe. Returns dict of ids."""
+    from app.models.pos import Floor, Table
+    from app.services import inventory as inv_svc
+    from app.services import recipes as recipe_svc
+    with app.app_context():
+        floor = Floor(branch_id=branch_ids["A"], name="Ground Floor")
+        db.session.add(floor)
+        db.session.commit()
+        table = Table(floor_id=floor.id, branch_id=branch_ids["A"], name="T1", capacity=4)
+        db.session.add(table)
+        db.session.commit()
+
+        g_unit = unit(app, "g")
+        from app.models.inventory import InventoryItem
+        burger = db.session.get(InventoryItem, x["burger"])
+        burger.selling_price = "8.99"
+        burger.tax_rate_pct = "16"
+        db.session.commit()
+
+        inv_svc.receive_stock(item=db.session.get(InventoryItem, x["beef"]),
+                              location=db.session.get(__import__("app.models.inventory",
+                                                                 fromlist=["Location"]).Location, x["loc_a"]),
+                              quantity="10000", unit_cost="0.008", actor=None)
+        recipe_svc.save(None, burger, {"yield_qty": "1",
+                                       "lines": [{"item_id": x["beef"], "quantity": "150", "unit_id": g_unit.id}]})
+        db.session.commit()
+        return {"floor": floor.id, "table": table.id}

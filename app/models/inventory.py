@@ -70,6 +70,7 @@ class InventoryItem(TimestampMixin, db.Model):
     max_stock: Mapped[object | None] = mapped_column(QTY)
     reorder_level: Mapped[object] = mapped_column(QTY, default=0, server_default="0")
     selling_price: Mapped[object | None] = mapped_column(MONEY)  # for finished/semi-finished items
+    tax_rate_pct: Mapped[object | None] = mapped_column(RATE)  # overrides settings.tax.rate_pct
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     description: Mapped[str | None] = mapped_column(Text)
 

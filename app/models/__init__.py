@@ -13,6 +13,19 @@ from .inventory import (  # noqa: F401
     StockMovement,
     UnitOfMeasure,
 )
+from .pos import (  # noqa: F401
+    CashMovement,
+    CashRegisterSession,
+    Customer,
+    Floor,
+    Invoice,
+    Order,
+    OrderLine,
+    OrderLineModifier,
+    Payment,
+    ProductModifier,
+    Table,
+)
 from .purchasing import (  # noqa: F401
     PurchaseInvoice,
     PurchaseOrder,

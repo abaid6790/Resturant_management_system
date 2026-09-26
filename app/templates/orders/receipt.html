@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Receipt · {{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Receipt</h1></div>
+  <div class="actions" style="margin:0">
+    <button class="btn" type="button" onclick="window.print()">Print</button>
+    {% if can('pos.reprint') %}<form method="post" action="{{ url_for('orders.reprint', order_id=order.id) }}">{{ csrf() }}
+      <button class="btn" type="submit">Log reprint</button></form>{% endif %}
+  </div></div>
+<div class="card" style="max-width:28rem">
+  <p style="margin:0"><strong>{{ restaurant_name }}</strong></p>
+  <p class="muted small">{{ invoice.invoice_number }} · {{ invoice.created_at|dt }}</p>
+  <p class="small">{{ order.order_type.replace('_',' ')|capitalize }}{% if order.table %} · {{ order.table.name }}{% endif %}
+    {% if order.customer %} · {{ order.customer.name }}{% endif %}</p>
+  <hr>
+  <table style="border:none"><tbody>
+  {% for ln in order.lines %}<tr><td>{{ ln.quantity }} × {{ ln.item.name }}
+    {% for m in ln.modifiers %}<br><span class="muted small">&nbsp;&nbsp;+ {{ m.name }}</span>{% endfor %}</td>
+    <td class="num">{{ (ln.unit_price * ln.quantity)|round(2) }}</td></tr>{% endfor %}
+  </tbody></table>
+  <hr>
+  <table style="border:none"><tbody>
+  <tr><td>Subtotal</td><td class="num">{{ invoice.subtotal }}</td></tr>
+  <tr><td>Discount</td><td class="num">-{{ invoice.discount_total }}</td></tr>
+  <tr><td>Tax</td><td class="num">{{ invoice.tax_total }}</td></tr>
+  <tr><td>Service charge</td><td class="num">{{ invoice.service_charge_total }}</td></tr>
+  <tr><td>Delivery</td><td class="num">{{ invoice.delivery_charge_total }}</td></tr>
+  <tr><td><strong>Total</strong></td><td class="num"><strong>{{ invoice.total }}</strong></td></tr>
+  </tbody></table>
+  <hr>
+  <table style="border:none"><tbody>
+  {% for p in invoice.payments %}<tr><td>{{ p.method.replace('_',' ')|capitalize }}</td><td class="num">{{ p.amount }}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

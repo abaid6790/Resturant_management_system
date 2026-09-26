@@ -140,10 +140,39 @@ movement (`movement_type="purchase_in"`, `reference_type="purchase_receipt"`) an
 batch the same way. No separate "purchase costing" code path exists to drift out of sync with the
 ledger.
 
+## ADR-019 Pricing: tax-exclusive, order discount spread for correct per-line tax — Accepted (Phase 4)
+Item prices are entered TAX-EXCLUSIVE; tax is calculated on top at checkout using the item's own
+`tax_rate_pct` if set, else `settings.tax.rate_pct`. This was the open question carried since
+Phase 1 (asked three times, never answered) and is now built: changing it means changing how
+`pos.compute_totals()` derives `taxable_base` per line, not a schema change. Order-level discount
+is computed after line-level discounts, then spread across lines with `money.allocate()` (weighted
+by each line's post-line-discount amount) before tax is calculated per line — otherwise an order
+discount would either apply the wrong tax rate or require picking one rate for the whole order.
+Service charge (a flat % setting) applies to the discounted subtotal; whether it is itself taxable,
+and whether it applies outside dine-in, are both settings.
+
+## ADR-020 Selling an item with no recipe deducts the item itself — Accepted (Phase 4)
+`pos.complete_sale()` looks up a `Recipe` for the sold item; if one exists it consumes the recipe's
+ingredients (as Phase 2/3 already do), and if not, it consumes the sold item's own stock directly
+via FIFO. This lets a bottled drink or packaged snack (no BOM, just resold as-is) and a cooked dish
+(full recipe) both go through the same `complete_sale()` path with no special-casing by item type.
+
+## ADR-021 One open order per table, enforced at the database level — Accepted (Phase 4)
+A partial unique index (`table_id WHERE status = 'open'`) prevents two open orders from ever
+referencing the same table, even under concurrent requests; the service-level "is this table
+available" check is a good error message, not the actual guarantee. The same partial index is
+declared in the SQLAlchemy model (with `postgresql_where`) so `flask db migrate` sees no drift
+against a table created by raw SQL in the migration.
+
+## ADR-022 Cash payments can require an open register; cards/etc. never do — Accepted (Phase 4)
+`settings.pos.cash_requires_open_session` (on by default). Only one cash payment line is allowed
+per sale (a POS transaction has one till drawer); change is only given when a cash payment exists.
+Every cash movement — sale, cash in/out, opening float, closing count — posts to the same
+append-only `cash_movements` ledger, mirroring `stock_movements` and `supplier_ledger_entries`.
+
 ## Open questions (needed before the phase noted)
 | Question | Needed by |
 |---|---|
-| Menu prices tax-inclusive or tax-exclusive? Is service charge taxable? (asked twice, awaiting answer) | Phase 4 |
 | Returned food: back to stock or written off (per-return choice)? | Phase 6 |
 | Operational P&L only, or a full double-entry chart of accounts? | Phase 7 |
 | Must the POS work offline (server unreachable)? | Before Phase 4 |

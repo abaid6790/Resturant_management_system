@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Orders</h1></div>
+  {% if can('pos.sell') %}<a class="btn primary" href="{{ url_for('orders.new') }}">New order</a>{% endif %}</div>
+<form class="filters" method="get"><div class="field"><label for="status">Status</label><select id="status" name="status" onchange="this.form.submit()">
+  <option value="">All</option><option value="open" {% if status == 'open' %}selected{% endif %}>Open</option>
+  <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+  <option value="void" {% if status == 'void' %}selected{% endif %}>Void</option></select></div></form>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Type</th><th>Table</th><th>Customer</th><th>Status</th><th></th></tr></thead><tbody>
+{% for o in orders %}<tr><td>{{ o.order_number }}</td><td class="small">{{ o.order_type.replace('_',' ')|capitalize }}</td>
+  <td class="small">{{ o.table.name if o.table else '—' }}</td><td class="small">{{ o.customer.name if o.customer else 'Walk-in' }}</td>
+  <td><span class="pill {{ 'ok' if o.status == 'completed' else 'bad' if o.status == 'void' else 'warn' }}">{{ o.status }}</span></td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('orders.show', order_id=o.id) if o.status == 'open' else url_for('orders.receipt', order_id=o.id) }}">Open</a></td>
+</tr>{% else %}<tr><td colspan="6" class="empty">No orders match this filter.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

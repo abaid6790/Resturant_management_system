@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Close cash register{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Close cash register</h1><p>{{ session.location.name }}</p></div></div>
+<div class="card"><p style="margin:0">System expects <strong>{{ expected }}</strong> in the drawer.</p></div>
+<form method="post" class="card" style="max-width:26rem" novalidate>{{ csrf() }}
+  {{ field('counted_cash', 'Cash counted', '', errors, required=True, help='Physically count the drawer and enter the total.') }}
+  <div class="actions"><button class="btn primary" type="submit">Close register</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Checkout · {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Checkout — {{ order.order_number }}</h1></div></div>
+<div class="card"><h2>Total due</h2><p style="font-size:1.6rem;font-weight:650;margin:0">{{ totals.total }}</p></div>
+{% if errors %}<div class="banner">{% for k, v in errors.items() %}{{ v }} {% endfor %}</div>{% endif %}
+<form method="post" class="card">{{ csrf() }}
+  <table id="pay-rows"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th></th></tr></thead><tbody>
+    <tr><td><select name="pay_method"><option value="cash">Cash</option><option value="card">Card</option>
+      <option value="bank_transfer">Bank transfer</option><option value="mobile_wallet">Mobile wallet</option><option value="other">Other</option></select></td>
+      <td><input name="pay_amount" value="{{ totals.total }}" style="width:8rem"></td>
+      <td><input name="pay_reference" style="width:9rem" placeholder="optional"></td>
+      <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td></tr>
+  </tbody></table>
+  <div class="actions"><button class="btn sm" type="button" id="add-pay-row">Split payment</button></div>
+  <div class="actions"><button class="btn primary" type="submit">Complete sale</button>
+    <a class="btn" href="{{ url_for('orders.show', order_id=order.id) }}">Back</a></div>
+</form>
+<template id="pay-row-template"><tr>
+  <td><select name="pay_method"><option value="cash">Cash</option><option value="card">Card</option>
+    <option value="bank_transfer">Bank transfer</option><option value="mobile_wallet">Mobile wallet</option><option value="other">Other</option></select></td>
+  <td><input name="pay_amount" style="width:8rem"></td>
+  <td><input name="pay_reference" style="width:9rem" placeholder="optional"></td>
+  <td><button class="btn sm" type="button" onclick="this.closest('tr').remove()">Remove</button></td>
+</tr></template>
+<script>
+document.getElementById('add-pay-row').addEventListener('click', function () {
+  document.querySelector('#pay-rows tbody').appendChild(document.getElementById('pay-row-template').content.cloneNode(true));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Cash register · {{ session.location.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ session.location.name }}</h1>
+  <p><span class="pill {{ 'ok' if session.status == 'open' else '' }}">{{ session.status }}</span> · opened {{ session.opened_at|dt }}</p></div>
+  {% if session.status == 'open' and can('cash.session') %}<a class="btn primary" href="{{ url_for('cash.close_session', session_id=session.id) }}">Close register</a>{% endif %}</div>
+<div class="card"><h2>{{ 'Running total' if session.status == 'open' else 'Closing summary' }}</h2>
+  <p style="font-size:1.4rem;font-weight:650;margin:0">{{ running_total }}</p>
+  {% if session.status == 'closed' %}<p class="muted">Counted {{ session.counted_cash }} · variance
+    <strong class="{{ 'err' if session.variance and session.variance != 0 else '' }}">{{ session.variance }}</strong></p>{% endif %}
+</div>
+{% if session.status == 'open' and can('cash.manage') %}
+<div class="card"><h2>Cash in / out</h2>
+<div class="grid2">
+  <form method="post" action="{{ url_for('cash.cash_in', session_id=session.id) }}">{{ csrf() }}
+    <div class="field"><label for="ci-amt">Cash in — amount</label><input id="ci-amt" name="amount" required></div>
+    <div class="field"><label for="ci-reason">Reason</label><input id="ci-reason" name="reason" required></div>
+    <button class="btn" type="submit">Record cash in</button></form>
+  <form method="post" action="{{ url_for('cash.cash_out', session_id=session.id) }}">{{ csrf() }}
+    <div class="field"><label for="co-amt">Cash out — amount</label><input id="co-amt" name="amount" required></div>
+    <div class="field"><label for="co-reason">Reason</label><input id="co-reason" name="reason" required></div>
+    <button class="btn" type="submit">Record cash out</button></form>
+</div></div>{% endif %}
+<div class="card"><h2>Movements</h2>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>Type</th><th class="num">Amount</th><th>Reason / reference</th></tr></thead><tbody>
+{% for m in movements %}<tr><td class="small">{{ m.created_at|dt }}</td><td><span class="pill {{ 'ok' if m.amount > 0 else 'bad' }}">{{ m.movement_type.replace('_',' ') }}</span></td>
+  <td class="num">{{ '+' if m.amount > 0 else '' }}{{ m.amount }}</td><td class="small">{{ m.reason or '' }}{% if m.reference_type %} ({{ m.reference_type }} #{{ m.reference_id }}){% endif %}</td>
+</tr>{% else %}<tr><td colspan="4" class="empty">No movements yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

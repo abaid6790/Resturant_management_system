@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from app.core.errors import BusinessRuleError, NotFoundError, ValidationError
-from app.core.money import D
+from app.core.money import D, money
 from app.core.money import qty as qround
 from app.core.units import STANDARD_UNITS
 from app.extensions import db
@@ -16,6 +16,7 @@ from app.models.inventory import (
     StockMovement,
     UnitOfMeasure,
 )
+from app.models.pos import ProductModifier
 from app.services import audit
 
 SKU_RE = re.compile(r"[A-Z0-9][A-Z0-9._-]{1,39}")
@@ -306,3 +307,30 @@ def set_location_active(actor, loc, active: bool) -> None:
         loc.is_active = active
         audit.log("location.activate" if active else "location.deactivate", "inventory",
                   record_type="location", record_id=loc.id, branch_id=loc.branch_id)
+
+
+# ---- modifiers -------------------------------------------------------------------------------
+
+def save_modifiers(actor, item: InventoryItem, rows: list[dict]) -> None:
+    """Replace an item's optional add-ons, e.g. 'Extra cheese' (+1.00). Mirrors packaging units."""
+    errors, clean, seen = {}, [], set()
+    for i, r in enumerate(rows):
+        name = (r.get("name") or "").strip()
+        if not name:
+            continue
+        if name.lower() in seen:
+            errors[f"mod{i}"] = f"“{name}” is listed twice."
+            continue
+        seen.add(name.lower())
+        try:
+            delta = D(r.get("price_delta") or "0")
+        except Exception:  # noqa: BLE001
+            errors[f"mod{i}"] = f"Enter a valid price for “{name}”."
+            continue
+        clean.append(ProductModifier(item_id=item.id, name=name[:60], price_delta=money(delta)))
+    if errors:
+        raise ValidationError("Please fix the highlighted fields.", details=errors)
+    db.session.query(ProductModifier).filter(ProductModifier.item_id == item.id).delete()
+    db.session.flush()
+    for m in clean:
+        db.session.add(m)

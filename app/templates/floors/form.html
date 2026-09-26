@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Add floor{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Add floor</h1></div></div>
+<form method="post" class="card" style="max-width:30rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  {{ field('name', 'Floor name', form.name, errors, required=True, help='e.g. Ground Floor, Rooftop, Garden.') }}
+  <div class="actions"><button class="btn primary" type="submit">Create floor</button><a class="btn" href="{{ url_for('floors.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit table' if table else 'Add table' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ table.name if table else 'Add table' }} <span class="muted">· {{ floor.name }}</span></h1></div></div>
+<form method="post" class="card" style="max-width:26rem" novalidate>{{ csrf() }}
+  {{ field('name', 'Table name / number', form.name, errors, required=True) }}
+  {{ field('capacity', 'Seats', form.capacity or '2', errors, required=True) }}
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if table else 'Add table' }}</button>
+    <a class="btn" href="{{ url_for('floors.show', floor_id=floor.id) }}">Cancel</a></div>
+</form>
+{% endblock %}

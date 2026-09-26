@@ -1,0 +1,86 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}{{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ order.order_number }}</h1>
+  <p>{{ order.order_type.replace('_',' ')|capitalize }}{% if order.table %} · {{ order.table.name }}{% endif %}
+    {% if order.guest_count %} · {{ order.guest_count }} guests{% endif %}</p></div>
+  {% if can('pos.void') %}<button class="btn danger" type="button" onclick="document.getElementById('void-dlg').showModal()">Void order</button>{% endif %}</div>
+
+<div class="grid2" style="align-items:start">
+<div>
+<div class="card"><h2>Add item</h2>
+<form method="post" action="{{ url_for('orders.add_line', order_id=order.id) }}" id="add-line-form">{{ csrf() }}
+  <div class="field"><label for="li-item">Item</label><select id="li-item" name="item_id" required>
+    <option value="">Choose…</option>{% for i in items %}<option value="{{ i.id }}" data-price="{{ i.selling_price }}">{{ i.name }} — {{ i.selling_price }}</option>{% endfor %}</select></div>
+  <div id="mod-box"></div>
+  <div class="grid2">
+    <div class="field"><label for="li-qty">Quantity</label><input id="li-qty" name="quantity" value="1" required></div>
+    {% if can('pos.price_override') %}<div class="field"><label for="li-price">Price override</label><input id="li-price" name="unit_price" placeholder="optional"></div>{% endif %}
+  </div>
+  <div class="field"><label for="li-notes">Notes</label><input id="li-notes" name="notes" placeholder="e.g. No onions"></div>
+  <button class="btn primary" type="submit">Add to order</button>
+</form></div>
+
+<div class="card"><h2>Customer</h2>
+<form method="post" action="{{ url_for('orders.set_customer', order_id=order.id) }}" style="display:flex;gap:.5rem">{{ csrf() }}
+  <select name="customer_id" style="flex:1"><option value="">Walk-in</option>
+    {% for c in customers %}<option value="{{ c.id }}" {% if order.customer_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <button class="btn" type="submit">Set</button></form></div>
+
+{% if can('pos.discount') %}<div class="card"><h2>Discount</h2>
+<form method="post" action="{{ url_for('orders.set_discount', order_id=order.id) }}" class="grid2">{{ csrf() }}
+  <div class="field"><label for="d-kind">Type</label><select id="d-kind" name="discount_kind">
+    <option value="none" {% if order.discount_kind == 'none' %}selected{% endif %}>None</option>
+    <option value="percentage" {% if order.discount_kind == 'percentage' %}selected{% endif %}>Percentage</option>
+    <option value="fixed" {% if order.discount_kind == 'fixed' %}selected{% endif %}>Fixed amount</option></select></div>
+  <div class="field"><label for="d-val">Value</label><input id="d-val" name="discount_value" value="{{ order.discount_value }}"></div>
+  <div class="field" style="grid-column:1/-1"><label for="d-reason">Reason</label><input id="d-reason" name="discount_reason" value="{{ order.discount_reason or '' }}"></div>
+  <p class="help" style="grid-column:1/-1;margin:0 0 .5rem">Discounts over {{ discount_limit }}% need the large-discount permission.</p>
+  <button class="btn" type="submit" style="grid-column:1/-1">Apply</button>
+</form></div>{% endif %}
+
+{% if order.order_type == 'delivery' %}<div class="card"><h2>Delivery charge</h2>
+<form method="post" action="{{ url_for('orders.set_delivery_charge', order_id=order.id) }}" style="display:flex;gap:.5rem">{{ csrf() }}
+  <input name="delivery_charge" value="{{ order.delivery_charge }}" style="flex:1"><button class="btn" type="submit">Set</button></form></div>{% endif %}
+</div>
+
+<div>
+<div class="card"><h2>Items</h2>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th></th></tr></thead><tbody>
+{% for ln in order.lines %}<tr><td>{{ ln.item.name }}{% if ln.notes %}<br><span class="muted small">{{ ln.notes }}</span>{% endif %}
+    {% for m in ln.modifiers %}<br><span class="muted small">+ {{ m.name }} ({{ m.price_delta }})</span>{% endfor %}</td>
+  <td class="num">{{ ln.quantity }}</td><td class="num">{{ ln.unit_price }}</td>
+  <td class="actions-cell"><form method="post" action="{{ url_for('orders.remove_line', order_id=order.id, line_id=ln.id) }}">{{ csrf() }}
+    <button class="btn sm" type="submit">Remove</button></form></td>
+</tr>{% else %}<tr><td colspan="4" class="empty">No items added yet.</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="card"><h2>Totals</h2>
+<table style="border:none"><tbody>
+<tr><td>Subtotal</td><td class="num">{{ totals.subtotal }}</td></tr>
+<tr><td>Discount</td><td class="num">-{{ totals.discount_total }}</td></tr>
+<tr><td>Tax</td><td class="num">{{ totals.tax_total }}</td></tr>
+<tr><td>Service charge</td><td class="num">{{ totals.service_charge_total }}</td></tr>
+<tr><td>Delivery</td><td class="num">{{ totals.delivery_charge_total }}</td></tr>
+<tr><td><strong>Total</strong></td><td class="num"><strong>{{ totals.total }}</strong></td></tr>
+</tbody></table>
+{% if order.lines %}<div class="actions"><a class="btn primary" href="{{ url_for('orders.checkout', order_id=order.id) }}" style="width:100%;justify-content:center">Checkout</a></div>{% endif %}
+</div>
+</div>
+</div>
+
+<dialog id="void-dlg"><form method="post" action="{{ url_for('orders.void', order_id=order.id) }}">{{ csrf() }}
+  <p style="margin-top:0">Reason for voiding {{ order.order_number }}</p><input name="reason" required style="width:100%">
+  <div class="actions" style="justify-content:flex-end"><button class="btn" type="button" onclick="document.getElementById('void-dlg').close()">Back</button>
+    <button class="btn danger solid" type="submit">Void order</button></div></form></dialog>
+
+<script>
+var MODS = {{ modifiers_by_item | tojson }};
+var itemSel = document.getElementById('li-item'), box = document.getElementById('mod-box');
+itemSel.addEventListener('change', function () {
+  var mods = MODS[itemSel.value] || [];
+  box.innerHTML = mods.length ? '<div class="field"><label>Add-ons</label>' + mods.map(function (m) {
+    return '<label class="check"><input type="checkbox" name="modifier_ids" value="' + m.id + '"> ' + m.name + ' (' + m.price_delta + ')</label>';
+  }).join('') + '</div>' : '';
+});
+</script>
+{% endblock %}

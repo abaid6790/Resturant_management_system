@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}{{ floor.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ floor.name }}</h1><p>{{ floor.branch.name }}</p></div>
+  {% if can('tables.manage') %}<a class="btn primary" href="{{ url_for('floors.new_table', floor_id=floor.id) }}">Add table</a>{% endif %}</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.8rem">
+{% for t in floor.tables %}
+<div class="card" style="margin:0;text-align:center">
+  <h3>{{ t.name }}</h3><p class="muted small" style="margin:.2rem 0">{{ t.capacity }} seats</p>
+  <span class="pill {{ 'ok' if t.status == 'available' else 'bad' if t.status == 'occupied' else 'warn' }}">{{ t.status|capitalize }}</span>
+  {% if can('tables.manage') %}<div class="actions" style="justify-content:center;margin-top:.6rem">
+    <a class="btn sm" href="{{ url_for('floors.edit_table', table_id=t.id) }}">Edit</a></div>{% endif %}
+  {% if t.status == 'available' and can('pos.sell') %}<div class="actions" style="justify-content:center;margin-top:.4rem">
+    <a class="btn sm primary" href="{{ url_for('orders.new', order_type='dine_in', table_id=t.id) }}">Seat</a></div>{% endif %}
+</div>
+{% else %}<p class="empty" style="grid-column:1/-1">No tables on this floor yet.</p>{% endfor %}
+</div>
+{% endblock %}

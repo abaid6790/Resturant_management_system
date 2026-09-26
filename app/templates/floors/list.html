@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, status_pill with context %}
+{% block title %}Floors{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Floors</h1><p>Group your tables by floor or section.</p></div>
+  {% if can('tables.manage') %}<a class="btn primary" href="{{ url_for('floors.new') }}">Add floor</a>{% endif %}</div>
+<div class="table-wrap"><table><thead><tr><th>Floor</th><th>Branch</th><th class="num">Tables</th><th>Status</th><th></th></tr></thead><tbody>
+{% for f in floors %}<tr><td><a href="{{ url_for('floors.show', floor_id=f.id) }}">{{ f.name }}</a></td>
+  <td class="small">{{ f.branch.name }}</td><td class="num">{{ f.tables|length }}</td><td>{{ status_pill(f.is_active) }}</td>
+  <td class="actions-cell">{% if can('tables.manage') %}<form method="post" action="{{ url_for('floors.status', floor_id=f.id) }}">{{ csrf() }}
+    <input type="hidden" name="active" value="{{ 0 if f.is_active else 1 }}">
+    <button class="btn sm {{ 'danger' if f.is_active else '' }}" type="submit">{{ 'Deactivate' if f.is_active else 'Activate' }}</button></form>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No floors yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

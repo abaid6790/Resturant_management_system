@@ -6,10 +6,14 @@ def register_web(app: Flask) -> None:
         audit,
         auth,
         branches,
+        cash,
         categories,
+        customers,
+        floors,
         home,
         items,
         locations,
+        orders,
         purchases,
         recipes,
         roles,
@@ -20,5 +24,5 @@ def register_web(app: Flask) -> None:
     )
 
     for module in (auth, home, users, roles, branches, settings, audit, categories, items,
-                  locations, stock, recipes, suppliers, purchases):
+                  locations, stock, recipes, suppliers, purchases, floors, customers, orders, cash):
         app.register_blueprint(module.bp)

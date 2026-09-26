@@ -67,6 +67,25 @@ REGISTRY: list[SettingDef] = [
                help="Used as the default due date on new invoices for suppliers with no terms set."),
     SettingDef("purchasing.po_number_prefix", "Purchasing", "Purchase order number prefix", "str",
                "PO", help="e.g. PO-000123."),
+    SettingDef("tax.rate_pct", "Tax and charges", "Default tax rate (%)", "int", 0, min=0, max=100,
+               help="Applied to items with no tax rate of their own. Prices are entered "
+                    "TAX-EXCLUSIVE: tax is added on top at checkout."),
+    SettingDef("service_charge.percent", "Tax and charges", "Service charge (%)", "int", 0, min=0,
+               max=100, help="Applied to the order subtotal after discounts. 0 disables it."),
+    SettingDef("service_charge.taxable", "Tax and charges", "Tax applies to the service charge too",
+               "bool", False),
+    SettingDef("service_charge.dine_in_only", "Tax and charges", "Service charge on dine-in orders only",
+               "bool", True),
+    SettingDef("pos.order_number_prefix", "POS", "Order number prefix", "str", "ORD"),
+    SettingDef("pos.invoice_number_prefix", "POS", "Invoice number prefix", "str", "INV"),
+    SettingDef("pos.default_delivery_charge", "POS", "Default delivery charge", "str", "0.00",
+               help="Can be changed per order. Enter a plain amount, e.g. 2.50."),
+    SettingDef("pos.cash_requires_open_session", "POS", "Cash payments require an open cash register",
+               "bool", True),
+    SettingDef("pos.discount_limit_pct", "POS", "Discount limit without extra approval (%)", "int",
+               20, min=0, max=100,
+               help="A discount above this, on any single order, needs the 'Apply large "
+                    "discounts' permission rather than the ordinary discount permission."),
 ]
 BY_KEY: dict[str, SettingDef] = {d.key: d for d in REGISTRY}
 

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Open cash register{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Open a cash register</h1></div></div>
+<form method="post" class="card" style="max-width:26rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.location_id }}"><label for="f-location">Location</label>
+    <select id="f-location" name="location_id"><option value="">Choose…</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+    {% if errors.location_id %}<p class="err">{{ errors.location_id }}</p>{% endif %}</div>
+  {{ field('opening_float', 'Opening float', form.get('opening_float',''), errors, required=True, help='Cash in the drawer at the start of the shift.') }}
+  <div class="actions"><button class="btn primary" type="submit">Open register</button></div>
+</form>
+{% endblock %}

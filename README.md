@@ -10,8 +10,8 @@ Design rules and decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 | 1 | Auth, users, roles/permissions, branches, settings, audit framework, UI shell | **Done** |
 | 2 | Catalog, units, inventory ledger, batches/FIFO, recipes | **Done** |
 | 3 | Suppliers and purchasing | **Done** |
-| 4 | POS core: orders, payments, invoices, cash register, `complete_sale` | Next |
-| 5 | Kitchen (KOT/KDS) | |
+| 4 | POS core: orders, payments, invoices, cash register, `complete_sale` | **Done** |
+| 5 | Kitchen (KOT/KDS) | Next |
 | 6 | Splits/merges, returns/refunds, credit, loyalty, reservations | |
 | 7 | Expenses, employees, attendance, P&L | |
 | 8 | Dashboard and reports | |
@@ -61,6 +61,8 @@ app/services/        business rules; each change + its audit entry in one transa
 app/services/inventory.py  the FIFO stock ledger: receive/consume/adjust/transfer/wastage
 app/services/recipes.py    BOM costing and consumption (recurses through sub-recipes)
 app/services/purchasing.py suppliers, PO lifecycle, receiving, invoices, payments, returns
+app/services/pos.py        order building, pricing (tax/discount/service charge), complete_sale()
+app/services/cash.py       cash register sessions (append-only cash_movements ledger)
 app/core/authz.py    @public, @require, branch_scope(), escalation guards
 app/core/permissions.py  the permission catalogue for the whole system
 migrations/          Alembic migrations (never edit applied ones)

@@ -52,3 +52,21 @@ def test_purchasing_migrations_are_reversible(db_app):
         assert db.session.execute(db.text(
             "select 1 from pg_trigger where tgname = 'trg_supplier_ledger_entries_immutable'"
         )).first() is not None
+
+
+def test_pos_migrations_are_reversible(db_app):
+    with db_app.app_context():
+        downgrade(revision="0005")
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert "orders" not in tables and "cash_movements" not in tables
+        assert "suppliers" in tables  # earlier phases untouched
+        upgrade()
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert {"floors", "tables", "customers", "product_modifiers", "orders", "order_lines",
+               "invoices", "payments", "cash_register_sessions", "cash_movements"} <= tables
+        assert db.session.execute(db.text(
+            "select 1 from pg_trigger where tgname = 'trg_cash_movements_immutable'"
+        )).first() is not None
+        assert db.session.execute(db.text(
+            "select 1 from pg_indexes where indexname = 'uq_orders_one_open_per_table'"
+        )).first() is not None

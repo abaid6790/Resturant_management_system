@@ -67,6 +67,14 @@ def purch(inv):
 
 
 @pytest.fixture()
+def pos(inv):
+    """inv plus a table and a priced, recipe-backed burger. Returns (app, ids, x, p)."""
+    from tests.inventory_helpers import pos_setup
+    app, ids, x = inv
+    return app, ids, x, pos_setup(app, ids, x)
+
+
+@pytest.fixture()
 def fresh_client():
     """Brand-new app that never touches the database (setup treated as done)."""
     app = create_app("testing")

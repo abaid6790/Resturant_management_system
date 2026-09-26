@@ -192,7 +192,7 @@ def invoice(po_id):
 @bp.route("/returns/new", methods=["GET", "POST"])
 @require("purchases.return")
 def new_return():
-    errors = {}
+    errors, failed = {}, False
     if request.method == "POST":
         f = request.form
         lines = [{"item_id": i, "quantity": q, "unit_cost": c}
@@ -207,9 +207,10 @@ def new_return():
             return redirect(url_for("suppliers.show", supplier_id=ret.supplier_id))
         except (ValidationError, BusinessRuleError) as err:
             db.session.rollback()
+            failed = True
             errors = err.details if isinstance(err, ValidationError) and err.details else {}
             flash(err.message, "error")
     return render_template("purchases/return_form.html", errors=errors, form=request.form,
                            items=_items(), suppliers=list(db.session.scalars(svc.search_suppliers())),
                            locations=catalog_svc.visible_locations(g.user, include_inactive=False)), \
-        (422 if errors else 200)
+        (422 if failed else 200)
