@@ -75,6 +75,14 @@ def pos(inv):
 
 
 @pytest.fixture()
+def kitchen(pos):
+    """pos plus a Grill station assigned to the burger. Returns (app, ids, x, p, k)."""
+    from tests.inventory_helpers import kitchen_setup
+    app, ids, x, p = pos
+    return app, ids, x, p, kitchen_setup(app, ids, x)
+
+
+@pytest.fixture()
 def fresh_client():
     """Brand-new app that never touches the database (setup treated as done)."""
     app = create_app("testing")

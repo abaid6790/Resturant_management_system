@@ -170,6 +170,9 @@ def add_line(actor, order: Order, data: dict) -> OrderLine:
     db.session.flush()
     audit.log("order.add_line", "pos", record_type="order", record_id=order.id, branch_id=order.branch_id,
              reference=order.order_number, after={"item": item.sku, "quantity": str(qty)})
+    if settings_svc.get("kitchen.auto_fire"):
+        from app.services import kitchen as kitchen_svc
+        kitchen_svc.fire_lines(actor, order, [line])
     return line
 
 
@@ -244,6 +247,8 @@ def void_order(actor, order: Order, reason: str) -> None:
     order.status, order.void_reason = "void", reason.strip()[:255]
     if order.table_id:
         order.table.status = "available"
+    from app.services import kitchen as kitchen_svc
+    kitchen_svc.cancel_tickets_for_order(order)
     audit.log("order.void", "pos", record_type="order", record_id=order.id, branch_id=order.branch_id,
              reference=order.order_number, after={"reason": order.void_reason})
 

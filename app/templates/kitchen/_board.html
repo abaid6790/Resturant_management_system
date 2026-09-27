@@ -1,0 +1,36 @@
+<div class="filters">
+  <div class="field"><label for="station-filter">Station</label>
+    <select id="station-filter" onchange="location.href='{{ url_for('kitchen.board') }}' + (this.value ? '?station_id=' + this.value : '')">
+      <option value="">All stations</option>
+      {% for s in stations %}<option value="{{ s.id }}" {% if station_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+{% for col_status, col_label in (('queued','Queued'), ('preparing','Preparing'), ('ready','Ready')) %}
+  <div>
+    <h3>{{ col_label }} <span class="muted small">({{ tickets|selectattr('status','equalto',col_status)|list|length }})</span></h3>
+    {% for t in tickets if t.status == col_status %}
+    <div class="card" style="margin-bottom:.7rem{{ ';border-color:#B42318;border-width:2px' if t.priority == 'rush' }}">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div><strong>{{ t.ticket_number }}</strong><br>
+          <span class="small muted">{{ t.station.name if t.station else 'General' }} · {{ t.order.order_type.replace('_',' ')|capitalize }}{% if t.order.table %} · {{ t.order.table.name }}{% endif %}</span></div>
+        {% if t.priority == 'rush' %}<span class="pill bad">Rush</span>{% endif %}
+      </div>
+      <ul style="margin:.5rem 0 0;padding-left:1.1rem">
+        {% for ln in t.lines %}<li>{{ ln.quantity }} × {{ ln.order_line.item.name }}{% if ln.notes %} <span class="muted small">({{ ln.notes }})</span>{% endif %}</li>{% endfor %}
+      </ul>
+      {% if can('kitchen.update') %}
+      <div class="actions" style="margin-top:.6rem">
+        <form method="post" action="{{ url_for('kitchen.advance', ticket_id=t.id) }}">{{ csrf() }}
+          <input type="hidden" name="from" value="board"><input type="hidden" name="station_id" value="{{ station_id or '' }}">
+          <button class="btn sm primary" type="submit">
+            {{ {'queued': 'Start preparing', 'preparing': 'Mark ready', 'ready': 'Mark served'}[col_status] }}</button></form>
+        {% if col_status == 'queued' and t.priority != 'rush' %}<form method="post" action="{{ url_for('kitchen.priority', ticket_id=t.id) }}">{{ csrf() }}
+          <input type="hidden" name="priority" value="rush"><input type="hidden" name="station_id" value="{{ station_id or '' }}">
+          <button class="btn sm" type="submit">Mark rush</button></form>{% endif %}
+      </div>{% endif %}
+    </div>
+    {% else %}<p class="muted small">Nothing here.</p>{% endfor %}
+  </div>
+{% endfor %}
+</div>

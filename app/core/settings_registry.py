@@ -86,6 +86,12 @@ REGISTRY: list[SettingDef] = [
                20, min=0, max=100,
                help="A discount above this, on any single order, needs the 'Apply large "
                     "discounts' permission rather than the ordinary discount permission."),
+    SettingDef("kitchen.auto_fire", "Kitchen", "Send items to the kitchen as soon as they're added",
+               "bool", False,
+               help="Off (recommended): a waiter builds the order, then sends it with 'Fire to "
+                    "kitchen'. On: every item fires the moment it's added to the order."),
+    SettingDef("kitchen.ticket_number_prefix", "Kitchen", "Kitchen ticket number prefix", "str",
+               "KOT"),
 ]
 BY_KEY: dict[str, SettingDef] = {d.key: d for d in REGISTRY}
 

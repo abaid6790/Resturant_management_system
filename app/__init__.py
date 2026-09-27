@@ -63,8 +63,10 @@ def create_app(env: str | None = None, overrides: dict | None = None) -> Flask:
     from .api import register_blueprints
     from .cli import register_cli
     from .core.authn import init_auth
+    from .core.events import Broadcaster
     from .web import register_web
 
+    app.extensions["kitchen_events"] = Broadcaster()
     init_auth(app)
     register_blueprints(app)
     register_web(app)

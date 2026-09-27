@@ -11,8 +11,8 @@ Design rules and decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 | 2 | Catalog, units, inventory ledger, batches/FIFO, recipes | **Done** |
 | 3 | Suppliers and purchasing | **Done** |
 | 4 | POS core: orders, payments, invoices, cash register, `complete_sale` | **Done** |
-| 5 | Kitchen (KOT/KDS) | Next |
-| 6 | Splits/merges, returns/refunds, credit, loyalty, reservations | |
+| 5 | Kitchen (KOT/KDS) | **Done** |
+| 6 | Splits/merges, returns/refunds, credit, loyalty, reservations | Next |
 | 7 | Expenses, employees, attendance, P&L | |
 | 8 | Dashboard and reports | |
 | 9 | QR menu / ordering | |
@@ -63,6 +63,8 @@ app/services/recipes.py    BOM costing and consumption (recurses through sub-rec
 app/services/purchasing.py suppliers, PO lifecycle, receiving, invoices, payments, returns
 app/services/pos.py        order building, pricing (tax/discount/service charge), complete_sale()
 app/services/cash.py       cash register sessions (append-only cash_movements ledger)
+app/services/kitchen.py    KOT firing, ticket lifecycle, station grouping
+app/core/events.py         in-process SSE pub/sub for the live kitchen display
 app/core/authz.py    @public, @require, branch_scope(), escalation guards
 app/core/permissions.py  the permission catalogue for the whole system
 migrations/          Alembic migrations (never edit applied ones)

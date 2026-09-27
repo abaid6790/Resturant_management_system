@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit station' if station else 'Add station' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ station.name if station else 'Add station' }}</h1></div></div>
+<form method="post" class="card" style="max-width:28rem" novalidate>{{ csrf() }}
+  {% if not station %}<div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>{% endif %}
+  {{ field('name', 'Station name', form.name, errors, required=True, help='e.g. Grill, Fry, Cold Kitchen, Bar.') }}
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if station else 'Create station' }}</button>
+    <a class="btn" href="{{ url_for('kitchen.stations') }}">Cancel</a></div>
+</form>
+{% endblock %}

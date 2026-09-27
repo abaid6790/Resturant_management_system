@@ -70,3 +70,22 @@ def test_pos_migrations_are_reversible(db_app):
         assert db.session.execute(db.text(
             "select 1 from pg_indexes where indexname = 'uq_orders_one_open_per_table'"
         )).first() is not None
+
+
+def test_kitchen_migrations_are_reversible(db_app):
+    with db_app.app_context():
+        downgrade(revision="0006")
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert "kitchen_tickets" not in tables and "kitchen_stations" not in tables
+        cols = {c["name"] for c in db.inspect(db.engine).get_columns("inventory_items")}
+        assert "station_id" not in cols
+        cols = {c["name"] for c in db.inspect(db.engine).get_columns("order_lines")}
+        assert "is_fired" not in cols
+        assert "orders" in tables  # earlier phases untouched
+        upgrade()
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert {"kitchen_stations", "kitchen_tickets", "kitchen_ticket_lines"} <= tables
+        cols = {c["name"] for c in db.inspect(db.engine).get_columns("inventory_items")}
+        assert "station_id" in cols
+        cols = {c["name"] for c in db.inspect(db.engine).get_columns("order_lines")}
+        assert "is_fired" in cols

@@ -71,6 +71,9 @@ class InventoryItem(TimestampMixin, db.Model):
     reorder_level: Mapped[object] = mapped_column(QTY, default=0, server_default="0")
     selling_price: Mapped[object | None] = mapped_column(MONEY)  # for finished/semi-finished items
     tax_rate_pct: Mapped[object | None] = mapped_column(RATE)  # overrides settings.tax.rate_pct
+    station_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kitchen_stations.id", ondelete="SET NULL")
+    )  # which kitchen station prepares this item, if any
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     description: Mapped[str | None] = mapped_column(Text)
 

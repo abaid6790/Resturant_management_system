@@ -13,6 +13,7 @@ from .inventory import (  # noqa: F401
     StockMovement,
     UnitOfMeasure,
 )
+from .kitchen import KitchenStation, KitchenTicket, KitchenTicketLine  # noqa: F401
 from .pos import (  # noqa: F401
     CashMovement,
     CashRegisterSession,

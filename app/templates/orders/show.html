@@ -4,7 +4,12 @@
 <div class="page-head"><div><h1>{{ order.order_number }}</h1>
   <p>{{ order.order_type.replace('_',' ')|capitalize }}{% if order.table %} · {{ order.table.name }}{% endif %}
     {% if order.guest_count %} · {{ order.guest_count }} guests{% endif %}</p></div>
-  {% if can('pos.void') %}<button class="btn danger" type="button" onclick="document.getElementById('void-dlg').showModal()">Void order</button>{% endif %}</div>
+  <div class="actions" style="margin:0">
+    {% if can('kitchen.view') and order.lines|selectattr('is_fired', 'equalto', false)|list %}
+    <form method="post" action="{{ url_for('kitchen.fire', order_id=order.id) }}">{{ csrf() }}
+      <button class="btn" type="submit">Fire to kitchen</button></form>{% endif %}
+    {% if can('pos.void') %}<button class="btn danger" type="button" onclick="document.getElementById('void-dlg').showModal()">Void order</button>{% endif %}
+  </div></div>
 
 <div class="grid2" style="align-items:start">
 <div>
@@ -48,7 +53,8 @@
 <div class="card"><h2>Items</h2>
 <div class="table-wrap"><table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th></th></tr></thead><tbody>
 {% for ln in order.lines %}<tr><td>{{ ln.item.name }}{% if ln.notes %}<br><span class="muted small">{{ ln.notes }}</span>{% endif %}
-    {% for m in ln.modifiers %}<br><span class="muted small">+ {{ m.name }} ({{ m.price_delta }})</span>{% endfor %}</td>
+    {% for m in ln.modifiers %}<br><span class="muted small">+ {{ m.name }} ({{ m.price_delta }})</span>{% endfor %}
+    {% if ln.is_fired %}<br><span class="pill info">Sent to kitchen</span>{% endif %}</td>
   <td class="num">{{ ln.quantity }}</td><td class="num">{{ ln.unit_price }}</td>
   <td class="actions-cell"><form method="post" action="{{ url_for('orders.remove_line', order_id=order.id, line_id=ln.id) }}">{{ csrf() }}
     <button class="btn sm" type="submit">Remove</button></form></td>

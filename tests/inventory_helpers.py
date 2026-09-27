@@ -68,3 +68,19 @@ def pos_setup(app, branch_ids, x):
                                        "lines": [{"item_id": x["beef"], "quantity": "150", "unit_id": g_unit.id}]})
         db.session.commit()
         return {"floor": floor.id, "table": table.id}
+
+
+def kitchen_setup(app, branch_ids, x):
+    """Adds a kitchen station and assigns it to the beef-mince item's finished product (burger)."""
+    from app.models.inventory import InventoryItem
+    from app.models.kitchen import KitchenStation
+    with app.app_context():
+        station = KitchenStation(branch_id=branch_ids["A"], name="Grill")
+        db.session.add(station)
+        db.session.commit()
+        burger = db.session.get(InventoryItem, x["burger"])
+        burger.station_id = station.id
+        bun = db.session.get(InventoryItem, x["bun"])
+        bun.selling_price = "0.50"  # sellable, but no station -> lands on the "General" ticket
+        db.session.commit()
+        return {"station": station.id}

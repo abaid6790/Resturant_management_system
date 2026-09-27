@@ -156,6 +156,7 @@ class OrderLine(db.Model):
     notes: Mapped[str | None] = mapped_column(String(255))
     discount_kind: Mapped[str] = mapped_column(String(10), default="none", server_default="none")
     discount_value: Mapped[object] = mapped_column(MONEY, default=0, server_default="0")
+    is_fired: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     order: Mapped[Order] = relationship(back_populates="lines")
     item = relationship("InventoryItem", lazy="joined")

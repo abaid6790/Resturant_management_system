@@ -26,6 +26,10 @@
       {% if item %}<input type="hidden" name="track_batches" value="{{ 'on' if form.track_batches else '' }}">{% endif %}
       <p class="help">Turn this off only for items you never need to cost or expire individually.</p></div>
   </div>
+  <div class="field"><label for="f-station_id">Kitchen station</label><select id="f-station_id" name="station_id">
+    <option value="">None (not prepared in the kitchen, e.g. a bottled drink)</option>
+    {% for s in stations %}<option value="{{ s.id }}" {% if form.station_id|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+    <p class="help">Which kitchen station prepares this item, so it shows up on the right screen when sent to the kitchen.</p></div>
   <div class="grid2">
     {{ field('min_stock', 'Minimum stock', form.min_stock, errors) }}
     {{ field('reorder_level', 'Reorder level', form.reorder_level, errors) }}

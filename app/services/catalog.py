@@ -133,6 +133,8 @@ def _clean_item(data: dict, existing: InventoryItem | None) -> dict:
         errors["stock_unit_id"] = "Choose the unit this item is tracked in."
     out["stock_unit_id"] = unit.id if unit else None
     out["track_batches"] = bool(data.get("track_batches"))
+    station_raw = data.get("station_id")
+    out["station_id"] = int(station_raw) if str(station_raw or "").isdigit() else None
     for f, label in (("min_stock", "Minimum stock"), ("reorder_level", "Reorder level")):
         try:
             out[f] = qround(data.get(f) or "0")
@@ -177,7 +179,8 @@ def _clean_item(data: dict, existing: InventoryItem | None) -> dict:
 def _snap(item: InventoryItem) -> dict:
     return {"sku": item.sku, "name": item.name, "item_type": item.item_type,
             "category_id": item.category_id, "stock_unit_id": item.stock_unit_id,
-            "track_batches": item.track_batches, "min_stock": str(item.min_stock),
+            "track_batches": item.track_batches, "station_id": item.station_id,
+            "min_stock": str(item.min_stock),
             "max_stock": str(item.max_stock) if item.max_stock is not None else None,
             "reorder_level": str(item.reorder_level),
             "selling_price": str(item.selling_price) if item.selling_price is not None else None}

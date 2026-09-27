@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Kitchen display{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Kitchen display</h1><p>Updates live as orders are fired and status changes.</p></div></div>
+<div id="board-container">{% include "kitchen/_board.html" %}</div>
+<script>
+(function () {
+  var container = document.getElementById('board-container');
+  var url = new URL(location.href);
+  function refresh() {
+    var params = new URLSearchParams(location.search);
+    params.set('fragment', '1');
+    fetch('{{ url_for("kitchen.board") }}?' + params.toString())
+      .then(function (r) { return r.text(); })
+      .then(function (html) { container.innerHTML = html; });
+  }
+  if (!!window.EventSource) {
+    var es = new EventSource('{{ url_for("kitchen.sse_stream") }}');
+    es.addEventListener('update', refresh);
+  }
+})();
+</script>
+{% endblock %}

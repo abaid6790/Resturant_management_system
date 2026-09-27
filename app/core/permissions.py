@@ -28,6 +28,7 @@ CATALOG: dict[str, list[tuple[str, str, bool]]] = {
     "Kitchen": [
         ("kitchen.view", "View the kitchen display", False),
         ("kitchen.update", "Change order preparation status", False),
+        ("kitchen.manage", "Manage kitchen stations", False),
     ],
     "Menu and recipes": [
         ("products.view", "View products", False),
@@ -123,13 +124,13 @@ DEFAULT_ROLES: dict[str, dict] = {
         "is_super": False,
         "permissions": ["dashboard.view", "pos.sell", "pos.hold", "pos.discount", "pos.transfer",
                         "pos.reprint", "tables.view", "reservations.view", "reservations.manage",
-                        "customers.view", "customers.manage", "cash.session"],
+                        "customers.view", "customers.manage", "cash.session", "kitchen.view"],
     },
     "Waiter": {
         "description": "Takes dine-in orders and manages their tables.",
         "is_super": False,
         "permissions": ["pos.sell", "pos.hold", "pos.transfer", "tables.view",
-                        "reservations.view", "customers.view"],
+                        "reservations.view", "customers.view", "kitchen.view"],
     },
     "Kitchen Staff": {
         "description": "Uses the kitchen display.", "is_super": False,

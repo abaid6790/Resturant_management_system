@@ -8,6 +8,7 @@ from app.core.http import paginate
 from app.extensions import db
 from app.models.inventory import ITEM_TYPES
 from app.services import catalog as svc
+from app.services import kitchen as kitchen_svc
 from app.services.inventory import current_unit_cost
 
 bp = Blueprint("items", __name__, url_prefix="/inventory/items")
@@ -56,7 +57,8 @@ def _form(existing=None):
     status = 422 if errors else 200
     return render_template("items/form.html", item=existing, form=form, errors=errors,
                            item_types=ITEM_TYPES, categories=svc.list_categories(include_inactive=False),
-                           units=svc.all_units()), status
+                           units=svc.all_units(), stations=kitchen_svc.visible_stations(
+                               g.user, include_inactive=False)), status
 
 
 @bp.route("/new", methods=["GET", "POST"])

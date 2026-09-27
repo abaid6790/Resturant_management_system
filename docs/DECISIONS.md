@@ -170,6 +170,39 @@ per sale (a POS transaction has one till drawer); change is only given when a ca
 Every cash movement — sale, cash in/out, opening float, closing count — posts to the same
 append-only `cash_movements` ledger, mirroring `stock_movements` and `supplier_ledger_entries`.
 
+## ADR-023 Live kitchen updates: Server-Sent Events, not WebSockets — Accepted (Phase 5)
+The kitchen display updates live via SSE (`app/core/events.py`): a small in-process pub/sub where
+each open display subscribes with a bounded queue, and `/kitchen/stream` blocks reading from it.
+This was chosen over WebSockets specifically because it fits the existing stack: Flask + waitress
+(a synchronous WSGI server) can serve SSE as an ordinary streamed HTTP response, whereas WebSockets
+need a different server (or an extension like Flask-SocketIO with its own event loop), which is a
+bigger change than this feature warrants for a single-location desktop deployment. The pub/sub is
+**process-local**: events published in one process are not seen by another. That is fine for the
+desktop app (one server process), but a clustered/multi-process deployment would need a shared
+broker (e.g. Redis pub/sub) instead — noted here rather than built, since it is not needed yet.
+Each display holds one open connection and one server thread for as long as it is open, so
+`waitress`'s thread pool must have enough threads for the number of simultaneously open kitchen
+displays plus ordinary request traffic; the desktop entry point does not currently raise the
+default thread count, which is fine for one or two displays and worth revisiting if more are used.
+
+## ADR-024 Firing groups by station; unassigned items still get a ticket — Accepted (Phase 5)
+Sending an order to the kitchen creates one `KitchenTicket` per distinct station among its
+not-yet-fired lines, so the grill only ever sees grill tickets. Items with no station assigned
+(`station_id IS NULL`) still get a ticket — shown as "General" on the board — rather than being
+silently skipped, since a restaurant that hasn't set up stations yet should still see everything
+it needs to cook. Firing is idempotent per line (`OrderLine.is_fired`): firing again only sends
+whatever is new, so a waiter can add a dessert after the mains were already sent without resending
+them. `settings.kitchen.auto_fire` (off by default) sends each line the moment it's added instead
+of waiting for an explicit "Fire to kitchen".
+
+## ADR-025 Ticket status moves forward only; voiding cancels what's still open — Accepted (Phase 5)
+`queued -> preparing -> ready -> served`, enforced in `kitchen.advance()`; a closed ticket
+(`served`/`cancelled`) cannot be reopened, and a step cannot be skipped. `pos.void_order()` calls
+`kitchen.cancel_tickets_for_order()`, which cancels any ticket not already `served` (a served
+ticket represents food that already went out and stays in history) — the same "closed doesn't mean
+untouched" distinction the append-only ledgers use elsewhere in this system, just without a DB
+trigger, since a ticket is operational state, not a financial or audit record.
+
 ## Open questions (needed before the phase noted)
 | Question | Needed by |
 |---|---|

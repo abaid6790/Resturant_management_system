@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, status_pill with context %}
+{% block title %}Kitchen stations{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Kitchen stations</h1><p>Grill, fry, cold kitchen, bar — whatever sections your kitchen has. Assign items to a station on the item's page.</p></div>
+  <a class="btn primary" href="{{ url_for('kitchen.new_station') }}">Add station</a></div>
+<div class="table-wrap"><table><thead><tr><th>Station</th><th>Branch</th><th>Status</th><th></th></tr></thead><tbody>
+{% for s in stations %}<tr><td>{{ s.name }}</td><td class="small">{{ s.branch.name }}</td><td>{{ status_pill(s.is_active) }}</td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('kitchen.edit_station', station_id=s.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('kitchen.station_status', station_id=s.id) }}">{{ csrf() }}
+      <input type="hidden" name="active" value="{{ 0 if s.is_active else 1 }}">
+      <button class="btn sm {{ 'danger' if s.is_active else '' }}" type="submit">{{ 'Deactivate' if s.is_active else 'Activate' }}</button></form></td>
+</tr>{% else %}<tr><td colspan="4" class="empty">No stations yet. Items with no station still show on the kitchen display as "General".</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

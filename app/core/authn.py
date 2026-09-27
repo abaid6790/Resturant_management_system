@@ -55,6 +55,8 @@ NAV = [
         ("Floors and tables", "floors.index", "floors.", "tables.view"),
         ("Customers", "customers.index", "customers.", "customers.view"),
         ("Cash register", "cash.index", "cash.", "cash.session"),
+        ("Kitchen display", "kitchen.board", "kitchen.board", "kitchen.view"),
+        ("Kitchen stations", "kitchen.stations", "kitchen.stations", "kitchen.manage"),
     ]),
     ("Purchasing", [
         ("Suppliers", "suppliers.index", "suppliers.", "suppliers.view"),
