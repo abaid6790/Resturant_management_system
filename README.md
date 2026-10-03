@@ -12,8 +12,8 @@ Design rules and decisions: [docs/DECISIONS.md](docs/DECISIONS.md).
 | 3 | Suppliers and purchasing | **Done** |
 | 4 | POS core: orders, payments, invoices, cash register, `complete_sale` | **Done** |
 | 5 | Kitchen (KOT/KDS) | **Done** |
-| 6 | Splits/merges, returns/refunds, credit, loyalty, reservations | Next |
-| 7 | Expenses, employees, attendance, P&L | |
+| 6 | Splits/merges, returns/refunds, credit, loyalty, reservations | **Done** |
+| 7 | Expenses, employees, attendance, P&L | Next |
 | 8 | Dashboard and reports | |
 | 9 | QR menu / ordering | |
 | 10 | Backup/restore, hardening, packaging | |
@@ -65,6 +65,10 @@ app/services/pos.py        order building, pricing (tax/discount/service charge)
 app/services/cash.py       cash register sessions (append-only cash_movements ledger)
 app/services/kitchen.py    KOT firing, ticket lifecycle, station grouping
 app/core/events.py         in-process SSE pub/sub for the live kitchen display
+app/services/refunds.py    partial/full refunds, priced from the original sale's snapshot
+app/services/customer_ledger.py  customer credit ledger (same pattern as the supplier ledger)
+app/services/loyalty.py    points earn/redeem/clawback, append-only ledger
+app/services/reservations.py  reservation lifecycle and seating
 app/core/authz.py    @public, @require, branch_scope(), escalation guards
 app/core/permissions.py  the permission catalogue for the whole system
 migrations/          Alembic migrations (never edit applied ones)

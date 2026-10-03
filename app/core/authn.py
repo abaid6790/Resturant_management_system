@@ -57,6 +57,8 @@ NAV = [
         ("Cash register", "cash.index", "cash.", "cash.session"),
         ("Kitchen display", "kitchen.board", "kitchen.board", "kitchen.view"),
         ("Kitchen stations", "kitchen.stations", "kitchen.stations", "kitchen.manage"),
+        ("Reservations", "reservations.index", "reservations.", "reservations.view"),
+        ("Refunds", "refunds.index", "refunds.", "pos.refund"),
     ]),
     ("Purchasing", [
         ("Suppliers", "suppliers.index", "suppliers.", "suppliers.view"),

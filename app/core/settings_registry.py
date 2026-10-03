@@ -92,6 +92,16 @@ REGISTRY: list[SettingDef] = [
                     "kitchen'. On: every item fires the moment it's added to the order."),
     SettingDef("kitchen.ticket_number_prefix", "Kitchen", "Kitchen ticket number prefix", "str",
                "KOT"),
+    SettingDef("returns.restock_by_default", "Returns", "Restock returned food by default", "bool",
+               False,
+               help="Off (recommended): returned food is written off. Each return can still "
+                    "choose to restock instead, except dishes made from a recipe."),
+    SettingDef("returns.refund_number_prefix", "Returns", "Refund number prefix", "str", "RF"),
+    SettingDef("loyalty.enabled", "Loyalty", "Enable loyalty points", "bool", False),
+    SettingDef("loyalty.earn_rate", "Loyalty", "Points earned per currency unit spent", "int", 1,
+               min=0, max=1000, help="e.g. 1 means a customer earns 1 point per $1 spent."),
+    SettingDef("loyalty.redemption_value", "Loyalty", "Value of 1 point when redeemed", "str",
+               "0.01", help="e.g. 0.01 means 100 points are worth $1.00 at checkout."),
 ]
 BY_KEY: dict[str, SettingDef] = {d.key: d for d in REGISTRY}
 

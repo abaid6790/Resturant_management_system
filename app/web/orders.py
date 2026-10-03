@@ -70,10 +70,17 @@ def show(order_id):
             modifiers_by_item[item.id] = [{"id": m.id, "name": m.name, "price_delta": str(m.price_delta)}
                                           for m in mods]
     from app.services import settings as settings_svc
+    available_tables = [t for f in floor_svc.visible_floors(g.user, include_inactive=False)
+                        for t in f.tables if t.is_active and t.status == "available"]
+    other_open_orders = list(db.session.scalars(
+        svc.visible_orders(g.user, status="open", location_id=order.location_id)
+        .where(svc.Order.id != order.id)
+    ))
     return render_template("orders/show.html", order=order, totals=totals, items=_sellable_items(),
                            modifiers_by_item=modifiers_by_item,
                            customers=list(db.session.scalars(customer_svc.search())),
-                           discount_limit=settings_svc.get("pos.discount_limit_pct"))
+                           discount_limit=settings_svc.get("pos.discount_limit_pct"),
+                           available_tables=available_tables, other_open_orders=other_open_orders)
 
 
 @bp.post("/<int:order_id>/lines")
@@ -152,6 +159,78 @@ def set_delivery_charge(order_id):
     return redirect(url_for("orders.show", order_id=order.id))
 
 
+@bp.post("/<int:order_id>/hold")
+@require("pos.hold")
+def hold(order_id):
+    order = svc.get_order_or_404(g.user, order_id)
+    try:
+        svc.hold_order(g.user, order)
+        db.session.commit()
+    except BusinessRuleError as err:
+        db.session.rollback()
+        flash(err.message, "error")
+    return redirect(url_for("orders.index"))
+
+
+@bp.post("/<int:order_id>/resume")
+@require("pos.hold")
+def resume(order_id):
+    order = svc.get_order_or_404(g.user, order_id)
+    try:
+        svc.resume_order(g.user, order)
+        db.session.commit()
+    except BusinessRuleError as err:
+        db.session.rollback()
+        flash(err.message, "error")
+    return redirect(url_for("orders.show", order_id=order.id))
+
+
+@bp.post("/<int:order_id>/transfer-table")
+@require("pos.transfer")
+def transfer_table(order_id):
+    order = svc.get_order_or_404(g.user, order_id)
+    try:
+        svc.transfer_table(g.user, order, request.form.get("table_id"))
+        db.session.commit()
+        flash("Table transferred.", "success")
+    except (ValidationError, BusinessRuleError) as err:
+        db.session.rollback()
+        flash(err.message, "error")
+    return redirect(url_for("orders.show", order_id=order.id))
+
+
+@bp.post("/<int:order_id>/merge")
+@require("pos.transfer")
+def merge(order_id):
+    order = svc.get_order_or_404(g.user, order_id)
+    try:
+        target = svc.get_order_or_404(g.user, int(request.form.get("target_order_id", 0)))
+        svc.merge_orders(g.user, order, target)
+        db.session.commit()
+        flash(f"Merged into {target.order_number}.", "success")
+        return redirect(url_for("orders.show", order_id=target.id))
+    except (ValidationError, BusinessRuleError) as err:
+        db.session.rollback()
+        flash(err.message, "error")
+    return redirect(url_for("orders.show", order_id=order.id))
+
+
+@bp.post("/<int:order_id>/split")
+@require("pos.transfer")
+def split(order_id):
+    order = svc.get_order_or_404(g.user, order_id)
+    try:
+        line_ids = [int(i) for i in request.form.getlist("line_ids")]
+        new_order = svc.split_order(g.user, order, line_ids, request.form.get("new_table_id") or None)
+        db.session.commit()
+        flash(f"Split into {new_order.order_number}.", "success")
+        return redirect(url_for("orders.show", order_id=new_order.id))
+    except (ValidationError, BusinessRuleError) as err:
+        db.session.rollback()
+        flash(err.message, "error")
+    return redirect(url_for("orders.show", order_id=order.id))
+
+
 @bp.post("/<int:order_id>/void")
 @require("pos.void")
 def void(order_id):
@@ -170,6 +249,8 @@ def void(order_id):
 @bp.route("/<int:order_id>/checkout", methods=["GET", "POST"])
 @require("pos.sell")
 def checkout(order_id):
+    from app.services import loyalty as loyalty_svc
+
     order = svc.get_order_or_404(g.user, order_id)
     totals = svc.compute_totals(order)
     errors, failed = {}, False
@@ -179,16 +260,23 @@ def checkout(order_id):
                    for m, a, r in zip_longest(f.getlist("pay_method"), f.getlist("pay_amount"),
                                               f.getlist("pay_reference")) if a]
         try:
-            invoice = svc.complete_sale(g.user, order, payments)
+            redeem_points = int(f.get("redeem_points") or 0)
+            invoice = svc.complete_sale(g.user, order, payments, redeem_points=redeem_points)
             db.session.commit()
-            flash(f"Sale completed: {invoice.invoice_number}.", "success")
+            msg = f"Sale completed: {invoice.invoice_number}."
+            if invoice.status != "paid":
+                msg += f" {invoice.status.capitalize()}: the remainder was put on the customer's account."
+            flash(msg, "success")
             return redirect(url_for("orders.receipt", order_id=order.id))
         except (ValidationError, BusinessRuleError) as err:
             db.session.rollback()
             failed = True
             errors = err.details if isinstance(err, ValidationError) and err.details else {}
             flash(err.message, "error")
-    return render_template("orders/checkout.html", order=order, totals=totals, errors=errors), \
+    return render_template("orders/checkout.html", order=order, totals=totals, errors=errors,
+                           loyalty_enabled=loyalty_svc.enabled(),
+                           points_value=loyalty_svc.points_value,
+                           can_credit=g.user.has_permission("customers.credit")), \
         (422 if failed else 200)
 
 

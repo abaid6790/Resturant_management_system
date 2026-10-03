@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ refund.refund_number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ refund.refund_number }}</h1><p>Against {{ refund.invoice.invoice_number }} · {{ refund.created_at|dt }}</p></div></div>
+<div class="card"><p style="margin:0"><strong>Reason:</strong> {{ refund.reason }}</p></div>
+<div class="card"><h2>Items</h2>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Net</th><th class="num">Tax</th><th>Restocked?</th></tr></thead><tbody>
+{% for ln in refund.lines %}<tr><td>{{ ln.order_line.item.name }}</td><td class="num">{{ ln.quantity }}</td>
+  <td class="num">{{ ln.net_amount }}</td><td class="num">{{ ln.tax_amount }}</td>
+  <td>{{ 'Yes (' ~ ln.restocked_cost ~ ')' if ln.restocked else 'No — written off' }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="card"><h2>Totals</h2><table style="border:none"><tbody>
+<tr><td>Net</td><td class="num">{{ refund.net_amount }}</td></tr>
+<tr><td>Tax</td><td class="num">{{ refund.tax_amount }}</td></tr>
+<tr><td>Additional</td><td class="num">{{ refund.extras_amount }}</td></tr>
+<tr><td><strong>Total</strong></td><td class="num"><strong>{{ refund.total_amount }}</strong></td></tr>
+</tbody></table></div>
+<div class="card"><h2>Paid out via</h2><div class="table-wrap"><table><thead><tr><th>Method</th><th class="num">Amount</th></tr></thead><tbody>
+{% for p in refund.payments %}<tr><td>{{ p.method.replace('_',' ')|capitalize }}</td><td class="num">{{ p.amount }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

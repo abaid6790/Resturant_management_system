@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, pager with context %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ customer.name }}</h1><p>{{ customer.phone or '' }}{% if customer.phone and customer.email %} · {% endif %}{{ customer.email or '' }}</p></div>
+  {% if can('customers.manage') %}<a class="btn" href="{{ url_for('customers.edit', customer_id=customer.id) }}">Edit</a>{% endif %}</div>
+
+<div class="grid2">
+<div class="card"><h2>Balance owed</h2><p style="font-size:1.4rem;font-weight:650;margin:0">{{ balance }}</p>
+  {% if can_pay and balance > 0 %}<form method="post" action="{{ url_for('customers.pay', customer_id=customer.id) }}" style="margin-top:.8rem">{{ csrf() }}
+    <div class="grid2"><input name="amount" placeholder="Amount" required>
+      <select name="method"><option value="cash">Cash</option><option value="card">Card</option>
+        <option value="bank_transfer">Bank transfer</option><option value="mobile_wallet">Mobile wallet</option><option value="other">Other</option></select></div>
+    <button class="btn primary" type="submit" style="margin-top:.5rem">Record payment</button></form>{% endif %}</div>
+
+{% if loyalty_enabled %}<div class="card"><h2>Loyalty points</h2><p style="font-size:1.4rem;font-weight:650;margin:0">{{ customer.loyalty_points }}</p>
+  {% if can_manage_loyalty %}<form method="post" action="{{ url_for('customers.loyalty_adjust', customer_id=customer.id) }}" style="margin-top:.8rem">{{ csrf() }}
+    <div class="grid2"><input name="points" placeholder="e.g. 50 or -50" required><input name="reason" placeholder="Reason" required></div>
+    <button class="btn" type="submit" style="margin-top:.5rem">Adjust points</button></form>{% endif %}</div>{% endif %}
+</div>
+
+<div class="card"><h2>Account ledger</h2>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>Type</th><th class="num">Amount</th><th class="num">Balance after</th><th>Notes</th></tr></thead><tbody>
+{% for e in entries %}<tr><td class="small">{{ e.created_at|dt }}</td><td><span class="pill {{ 'bad' if e.amount > 0 else 'ok' }}">{{ e.entry_type }}</span></td>
+  <td class="num">{{ '+' if e.amount > 0 else '' }}{{ e.amount }}</td><td class="num">{{ e.new_balance }}</td><td class="small">{{ e.notes or '' }}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No account activity yet.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}</div>
+
+{% if loyalty_enabled %}<div class="card"><h2>Loyalty history</h2>
+<div class="table-wrap"><table><thead><tr><th>When</th><th>Type</th><th class="num">Points</th><th class="num">Balance after</th><th>Notes</th></tr></thead><tbody>
+{% for t in loyalty_tx %}<tr><td class="small">{{ t.created_at|dt }}</td><td>{{ t.entry_type }}</td>
+  <td class="num">{{ '+' if t.points > 0 else '' }}{{ t.points }}</td><td class="num">{{ t.balance_after }}</td><td class="small">{{ t.notes or '' }}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No loyalty activity yet.</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+{% endblock %}

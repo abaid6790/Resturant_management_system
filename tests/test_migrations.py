@@ -89,3 +89,20 @@ def test_kitchen_migrations_are_reversible(db_app):
         assert "station_id" in cols
         cols = {c["name"] for c in db.inspect(db.engine).get_columns("order_lines")}
         assert "is_fired" in cols
+
+
+def test_advanced_pos_migrations_are_reversible(db_app):
+    with db_app.app_context():
+        downgrade(revision="0007")
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert "refunds" not in tables and "reservations" not in tables
+        assert "orders" in tables  # earlier phases untouched
+        upgrade()
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert {"refunds", "refund_lines", "refund_payments", "customer_balances",
+               "customer_ledger_entries", "customer_payments", "loyalty_transactions",
+               "reservations"} <= tables
+        for trig in ("trg_customer_ledger_entries_immutable", "trg_loyalty_transactions_immutable"):
+            assert db.session.execute(
+                db.text(f"select 1 from pg_trigger where tgname = '{trig}'")
+            ).first() is not None

@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "macros.html" import pager with context %}
+{% block title %}Refunds{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Refunds</h1><p>Start a refund from an order's receipt page.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Refund</th><th>Invoice</th><th>Reason</th><th class="num">Total</th><th>When</th><th></th></tr></thead><tbody>
+{% for r in refunds %}<tr><td>{{ r.refund_number }}</td><td>{{ r.invoice.invoice_number }}</td>
+  <td class="small">{{ r.reason }}</td><td class="num">{{ r.total_amount }}</td><td class="small">{{ r.created_at|dt }}</td>
+  <td class="actions-cell"><a class="btn sm" href="{{ url_for('refunds.show', refund_id=r.id) }}">Open</a></td>
+</tr>{% else %}<tr><td colspan="6" class="empty">No refunds yet.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}
+{% endblock %}

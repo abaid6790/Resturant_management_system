@@ -240,6 +240,108 @@ def set_delivery_charge(actor, order: Order, amount) -> None:
     order.delivery_charge = amount
 
 
+def hold_order(actor, order: Order) -> None:
+    _ensure_open(order)
+    order.is_held = True
+    audit.log("order.hold", "pos", record_type="order", record_id=order.id, branch_id=order.branch_id,
+             reference=order.order_number)
+
+
+def resume_order(actor, order: Order) -> None:
+    _ensure_open(order)
+    order.is_held = False
+    audit.log("order.resume", "pos", record_type="order", record_id=order.id,
+             branch_id=order.branch_id, reference=order.order_number)
+
+
+def _table_or_400(actor, table_id, *, branch_id) -> Table:
+    ids = allowed_branch_ids(actor)
+    table = db.session.get(Table, int(table_id)) if str(table_id or "").isdigit() else None
+    if table is None or not table.is_active or table.branch_id != branch_id:
+        raise ValidationError("Choose a valid table.", details={"table_id": "Choose a valid table."})
+    if ids is not None and table.branch_id not in ids:
+        raise ValidationError("Choose a valid table.", details={"table_id": "Choose a valid table."})
+    return table
+
+
+def transfer_table(actor, order: Order, new_table_id) -> None:
+    _ensure_open(order)
+    if order.order_type != "dine_in":
+        raise BusinessRuleError("Only dine-in orders have a table to transfer.")
+    new_table = _table_or_400(actor, new_table_id, branch_id=order.branch_id)
+    if new_table.id == order.table_id:
+        raise ValidationError("Choose a different table.", details={"table_id": "Already there."})
+    if new_table.status != "available":
+        raise BusinessRuleError(f"{new_table.name} is not available.")
+    old_table = order.table
+    order.table_id = new_table.id
+    new_table.status = "occupied"
+    if old_table:
+        old_table.status = "available"
+    audit.log("order.transfer_table", "pos", record_type="order", record_id=order.id,
+             branch_id=order.branch_id, reference=order.order_number,
+             after={"table": new_table.name})
+
+
+def merge_orders(actor, source: Order, target: Order) -> None:
+    """Move every line from `source` into `target` and close `source`. Only possible before
+    anything on either order has been sent to the kitchen — once a ticket exists, the two
+    orders' kitchen tickets would end up pointing at the wrong bill (see docs/DECISIONS.md)."""
+    _ensure_open(source)
+    _ensure_open(target)
+    if source.id == target.id:
+        raise ValidationError("Choose a different order to merge into.")
+    if source.branch_id != target.branch_id:
+        raise BusinessRuleError("Orders from different branches cannot be merged.")
+    if any(ln.is_fired for ln in source.lines) or any(ln.is_fired for ln in target.lines):
+        raise BusinessRuleError(
+            "One of these orders already has items sent to the kitchen and can no longer be merged."
+        )
+    for ln in list(source.lines):
+        ln.order_id = target.id
+    source.status, source.void_reason = "void", f"Merged into {target.order_number}"
+    if source.table_id:
+        source.table.status = "available"
+    db.session.flush()
+    audit.log("order.merge", "pos", record_type="order", record_id=target.id,
+             branch_id=target.branch_id, reference=target.order_number,
+             after={"merged_from": source.order_number})
+
+
+def split_order(actor, source: Order, line_ids: list[int], new_table_id=None) -> Order:
+    """Move the chosen (not yet fired) lines onto a new order, e.g. for separate checks."""
+    _ensure_open(source)
+    lines = [ln for ln in source.lines if ln.id in set(line_ids)]
+    if not lines:
+        raise ValidationError("Choose at least one item to split off.",
+                              details={"line_ids": "Choose at least one item."})
+    if any(ln.is_fired for ln in lines):
+        raise BusinessRuleError("Items already sent to the kitchen cannot be split onto a new order.")
+
+    new_table = None
+    if new_table_id:
+        new_table = _table_or_400(actor, new_table_id, branch_id=source.branch_id)
+        if new_table.status != "available":
+            raise BusinessRuleError(f"{new_table.name} is not available.")
+
+    new_order = Order(order_number=_next_number("pos.order_number_prefix", Order),
+                      branch_id=source.branch_id, location_id=source.location_id,
+                      order_type=source.order_type, table_id=new_table.id if new_table else None,
+                      customer_id=source.customer_id, status="open",
+                      server_id=actor.id if actor else None, created_by=actor.id if actor else None,
+                      split_from_order_id=source.id)
+    db.session.add(new_order)
+    db.session.flush()
+    for ln in lines:
+        ln.order_id = new_order.id
+    if new_table:
+        new_table.status = "occupied"
+    audit.log("order.split", "pos", record_type="order", record_id=source.id,
+             branch_id=source.branch_id, reference=source.order_number,
+             after={"new_order": new_order.order_number, "lines": len(lines)})
+    return new_order
+
+
 def void_order(actor, order: Order, reason: str) -> None:
     _ensure_open(order)
     if not reason or not reason.strip():
@@ -355,8 +457,17 @@ def _consume_for_line(item: InventoryItem, location, quantity, actor, reference_
                                 reference_id=reference_id, reason=f"Sale {reference_id}")
 
 
-def complete_sale(actor, order: Order, payments_data: list[dict]) -> Invoice:
-    """The orchestrator. All-or-nothing within the caller's transaction."""
+def complete_sale(actor, order: Order, payments_data: list[dict], *, redeem_points: int = 0) -> Invoice:
+    """
+    The orchestrator. All-or-nothing within the caller's transaction.
+
+    `redeem_points`: loyalty points the customer wants to apply as a discount (requires a
+    customer on the order and loyalty enabled). If what's paid still falls short of the total
+    after that, the shortfall is put on the customer's account as a credit sale — this requires
+    a customer on the order and the `customers.credit` permission; otherwise it's rejected.
+    """
+    from app.services import customer_ledger, loyalty
+
     _ensure_open(order)
     if not order.lines:
         raise BusinessRuleError("Add at least one item before completing the sale.")
@@ -381,19 +492,39 @@ def complete_sale(actor, order: Order, payments_data: list[dict]) -> Invoice:
                                "reference": (p.get("reference") or "").strip()[:120] or None})
     if cash_rows > 1:
         errors["payments"] = "Only one cash payment line is allowed per sale."
-    if not clean_payments and not errors:
-        errors["payments"] = "Record at least one payment."
     if errors:
         raise ValidationError("Please fix the highlighted fields.", details=errors)
 
+    redeem_points = int(redeem_points or 0)
+    redeemed_value = ZERO
+    if redeem_points > 0:
+        if not loyalty.enabled():
+            raise BusinessRuleError("Loyalty points are not enabled.")
+        if not order.customer_id:
+            raise BusinessRuleError("Select a customer before redeeming loyalty points.")
+        if redeem_points > order.customer.loyalty_points:
+            raise BusinessRuleError(
+                f"{order.customer.name} only has {order.customer.loyalty_points} points."
+            )
+        redeemed_value = loyalty.points_value(redeem_points)
+        if redeemed_value > totals.total:
+            raise BusinessRuleError("That many points are worth more than the total due.")
+
+    effective_total = money(totals.total - redeemed_value)
     paid_total = money(sum((p["amount"] for p in clean_payments), ZERO))
-    change_due = money(max(ZERO, paid_total - totals.total))
+    change_due = money(max(ZERO, paid_total - effective_total))
     if change_due > 0 and cash_rows == 0:
         raise BusinessRuleError("The amount paid exceeds the total; change can only be given in cash.")
-    if paid_total < totals.total:
-        raise BusinessRuleError(
-            f"Payment of {paid_total} does not cover the total of {totals.total}."
-        )
+
+    shortfall = money(max(ZERO, effective_total - paid_total))
+    if shortfall > 0:
+        if not order.customer_id:
+            raise BusinessRuleError(
+                f"Payment of {paid_total} does not cover the total of {effective_total}. "
+                "Select a customer to put the remainder on their account."
+            )
+        if not (actor and actor.has_permission("customers.credit")):
+            raise PermissionDeniedError("You do not have permission to sell on credit.")
 
     session = None
     if cash_rows:
@@ -403,11 +534,16 @@ def complete_sale(actor, order: Order, payments_data: list[dict]) -> Invoice:
                 "No cash register session is open at this location. Open one before taking cash."
             )
 
-    # 1) deduct inventory for every line, and capture the ACTUAL cost incurred (for COGS)
+    # 1) deduct inventory for every line, capture ACTUAL cost incurred, and snapshot this line's
+    #    final amounts so refunds always use these historical numbers, never a live recalculation
     cogs_total = ZERO
     for lp in totals.lines:
         movements = _consume_for_line(lp.line.item, order.location, lp.line.quantity, actor, order.id)
-        cogs_total += sum((D(m.qty) * -1 * D(m.unit_cost) for m in movements), ZERO)
+        line_cogs = money(sum((D(m.qty) * -1 * D(m.unit_cost) for m in movements), ZERO))
+        lp.line.cogs_amount = line_cogs
+        lp.line.final_net_amount = lp.taxable_base
+        lp.line.final_tax_amount = lp.tax
+        cogs_total += line_cogs
     cogs_total = money(cogs_total)
 
     # 2) invoice
@@ -416,21 +552,33 @@ def complete_sale(actor, order: Order, payments_data: list[dict]) -> Invoice:
         branch_id=order.branch_id, subtotal=totals.subtotal, discount_total=totals.discount_total,
         tax_total=totals.tax_total, service_charge_total=totals.service_charge_total,
         delivery_charge_total=totals.delivery_charge_total, total=totals.total,
-        paid_total=money(min(paid_total, totals.total)), status="paid", cogs_total=cogs_total,
+        paid_total=money(paid_total - change_due if change_due else paid_total),
+        status=("paid" if shortfall == 0 else ("partial" if paid_total > 0 else "unpaid")),
+        cogs_total=cogs_total,
     )
     db.session.add(invoice)
     db.session.flush()
 
-    # 3) payments (+ cash register)
+    # 3) payments (+ cash register), loyalty redemption, and any credit shortfall
     for p in clean_payments:
-        pay_amount = p["amount"] - change_due if p["method"] == "cash" else p["amount"]
+        applied = p["amount"] - change_due if p["method"] == "cash" else p["amount"]
         db.session.add(Payment(invoice_id=invoice.id, branch_id=order.branch_id,
                                cash_session_id=session.id if (p["method"] == "cash" and session) else None,
-                               method=p["method"], amount=p["amount"], reference=p["reference"],
-                               received_by=actor.id if actor else None))
+                               method=p["method"], amount=applied,
+                               tendered=p["amount"] if p["method"] == "cash" else None,
+                               reference=p["reference"], received_by=actor.id if actor else None))
         if p["method"] == "cash" and session:
-            cash_svc.record_sale_cash(session, pay_amount, reference_type="invoice",
+            cash_svc.record_sale_cash(session, applied, reference_type="invoice",
                                       reference_id=invoice.id, actor=actor)
+    if redeem_points > 0:
+        loyalty.redeem(actor, order.customer, redeem_points, branch_id=order.branch_id, invoice=invoice)
+    if shortfall > 0:
+        customer_ledger.post(customer_id=order.customer_id, branch_id=order.branch_id,
+                            entry_type="sale", amount=shortfall, reference_type="invoice",
+                            reference_id=invoice.id, notes=f"Credit sale {invoice.invoice_number}",
+                            actor=actor)
+    if order.customer_id and loyalty.enabled():
+        loyalty.earn(actor, order.customer, totals.total, branch_id=order.branch_id, invoice=invoice)
 
     # 4) close out the order and free the table
     order.status, order.completed_at = "completed", datetime.now(UTC)
@@ -439,7 +587,8 @@ def complete_sale(actor, order: Order, payments_data: list[dict]) -> Invoice:
 
     audit.log("order.complete", "pos", record_type="invoice", record_id=invoice.id,
              branch_id=order.branch_id, reference=invoice.invoice_number,
-             after={"total": str(totals.total), "cogs": str(cogs_total), "paid": str(paid_total)})
+             after={"total": str(totals.total), "cogs": str(cogs_total), "paid": str(paid_total),
+                    "credit": str(shortfall)})
     return invoice
 
 

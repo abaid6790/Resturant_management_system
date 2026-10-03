@@ -8,8 +8,12 @@
     {% if can('kitchen.view') and order.lines|selectattr('is_fired', 'equalto', false)|list %}
     <form method="post" action="{{ url_for('kitchen.fire', order_id=order.id) }}">{{ csrf() }}
       <button class="btn" type="submit">Fire to kitchen</button></form>{% endif %}
+    {% if can('pos.hold') %}{% if order.is_held %}
+      <form method="post" action="{{ url_for('orders.resume', order_id=order.id) }}">{{ csrf() }}<button class="btn primary" type="submit">Resume</button></form>
+    {% else %}<form method="post" action="{{ url_for('orders.hold', order_id=order.id) }}">{{ csrf() }}<button class="btn" type="submit">Hold</button></form>{% endif %}{% endif %}
     {% if can('pos.void') %}<button class="btn danger" type="button" onclick="document.getElementById('void-dlg').showModal()">Void order</button>{% endif %}
   </div></div>
+{% if order.is_held %}<div class="banner">This order is on hold.</div>{% endif %}
 
 <div class="grid2" style="align-items:start">
 <div>
@@ -43,6 +47,30 @@
   <p class="help" style="grid-column:1/-1;margin:0 0 .5rem">Discounts over {{ discount_limit }}% need the large-discount permission.</p>
   <button class="btn" type="submit" style="grid-column:1/-1">Apply</button>
 </form></div>{% endif %}
+
+{% if order.order_type == 'dine_in' and can('pos.transfer') %}
+<div class="card"><h2>Transfer table</h2>
+<form method="post" action="{{ url_for('orders.transfer_table', order_id=order.id) }}" style="display:flex;gap:.5rem">{{ csrf() }}
+  <select name="table_id" style="flex:1"><option value="">Choose a table…</option>
+    {% for t in available_tables %}<option value="{{ t.id }}">{{ t.floor.name }} · {{ t.name }}</option>{% endfor %}</select>
+  <button class="btn" type="submit">Transfer</button></form></div>
+
+{% if other_open_orders %}<div class="card"><h2>Merge into another order</h2>
+<form method="post" action="{{ url_for('orders.merge', order_id=order.id) }}" style="display:flex;gap:.5rem">{{ csrf() }}
+  <select name="target_order_id" style="flex:1"><option value="">Choose an order…</option>
+    {% for o in other_open_orders %}<option value="{{ o.id }}">{{ o.order_number }}{% if o.table %} ({{ o.table.name }}){% endif %}</option>{% endfor %}</select>
+  <button class="btn" type="submit" data-confirm="Merge {{ order.order_number }} into the selected order? This order will be closed.">Merge</button></form>
+<p class="help">Only possible while neither order has anything sent to the kitchen yet.</p></div>{% endif %}
+
+{% if order.lines|selectattr('is_fired', 'equalto', false)|list %}<div class="card"><h2>Split into a new order</h2>
+<form method="post" action="{{ url_for('orders.split', order_id=order.id) }}">{{ csrf() }}
+  {% for ln in order.lines if not ln.is_fired %}<label class="check"><input type="checkbox" name="line_ids" value="{{ ln.id }}"> {{ ln.quantity }} × {{ ln.item.name }}</label>{% endfor %}
+  <div class="field" style="margin-top:.5rem"><label for="split-table">New table (optional)</label>
+    <select id="split-table" name="new_table_id"><option value="">None (same table, separate check)</option>
+      {% for t in available_tables %}<option value="{{ t.id }}">{{ t.floor.name }} · {{ t.name }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Split selected items</button>
+</form></div>{% endif %}
+{% endif %}
 
 {% if order.order_type == 'delivery' %}<div class="card"><h2>Delivery charge</h2>
 <form method="post" action="{{ url_for('orders.set_delivery_charge', order_id=order.id) }}" style="display:flex;gap:.5rem">{{ csrf() }}

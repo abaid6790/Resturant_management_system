@@ -115,6 +115,18 @@ def record_sale_cash(session: CashRegisterSession, amount, *, reference_type, re
                 reference_id=reference_id, actor=actor)
 
 
+def record_refund_cash(session: CashRegisterSession, amount, *, reference_id, actor):
+    """Internal: called by refunds.create_refund() for a cash refund (money leaves the drawer)."""
+    return _post(session, "refund", -money(amount), reason="Cash refund", reference_type="refund",
+                reference_id=reference_id, actor=actor)
+
+
+def record_customer_payment_cash(session: CashRegisterSession, amount, *, customer_name, actor):
+    """Internal: a customer paying their account in cash puts money in the drawer."""
+    return _post(session, "cash_in", amount, reason=f"Customer payment: {customer_name}",
+                reference_type="customer_payment", actor=actor)
+
+
 def close_session(actor, session: CashRegisterSession, counted_cash) -> CashRegisterSession:
     if session.status != "open":
         raise BusinessRuleError("This cash register session is already closed.")

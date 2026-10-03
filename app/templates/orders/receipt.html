@@ -6,7 +6,10 @@
     <button class="btn" type="button" onclick="window.print()">Print</button>
     {% if can('pos.reprint') %}<form method="post" action="{{ url_for('orders.reprint', order_id=order.id) }}">{{ csrf() }}
       <button class="btn" type="submit">Log reprint</button></form>{% endif %}
+    {% if can('pos.refund') %}<a class="btn danger" href="{{ url_for('refunds.new', invoice_id=invoice.id) }}">Refund</a>{% endif %}
   </div></div>
+{% if invoice.refunded_total > 0 %}<p class="muted">Refunded so far: {{ invoice.refunded_total }}.
+  {% for r in invoice.refunds %}<a href="{{ url_for('refunds.show', refund_id=r.id) }}">{{ r.refund_number }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
 <div class="card" style="max-width:28rem">
   <p style="margin:0"><strong>{{ restaurant_name }}</strong></p>
   <p class="muted small">{{ invoice.invoice_number }} · {{ invoice.created_at|dt }}</p>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}New reservation{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New reservation</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  <div class="field"><label for="f-customer">Existing customer (optional)</label><select id="f-customer" name="customer_id"><option value="">None</option>
+    {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+  <div class="grid2">{{ field('guest_name', 'Name', form.guest_name, errors, help='Required if no existing customer is chosen.') }}
+    {{ field('guest_phone', 'Phone', form.guest_phone, errors) }}</div>
+  <div class="grid2">{{ field('party_size', 'Party size', form.party_size, errors, required=True) }}
+    {{ field('reserved_at', 'Date and time', form.reserved_at, errors, type='datetime-local', required=True) }}</div>
+  <div class="field"><label for="f-table">Table (optional)</label><select id="f-table" name="table_id"><option value="">Not assigned yet</option>
+    {% for t in tables %}<option value="{{ t.id }}">{{ t.floor.name }} · {{ t.name }} ({{ t.capacity }} seats)</option>{% endfor %}</select></div>
+  <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">{{ form.notes }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">Create reservation</button><a class="btn" href="{{ url_for('reservations.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

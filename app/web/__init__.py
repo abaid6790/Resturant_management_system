@@ -17,6 +17,8 @@ def register_web(app: Flask) -> None:
         orders,
         purchases,
         recipes,
+        refunds,
+        reservations,
         roles,
         settings,
         stock,
@@ -26,5 +28,5 @@ def register_web(app: Flask) -> None:
 
     for module in (auth, home, users, roles, branches, settings, audit, categories, items,
                   locations, stock, recipes, suppliers, purchases, floors, customers, orders, cash,
-                  kitchen):
+                  kitchen, refunds, reservations):
         app.register_blueprint(module.bp)

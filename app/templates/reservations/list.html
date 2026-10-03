@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block title %}Reservations{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Reservations</h1></div>
+  {% if can('reservations.manage') %}<a class="btn primary" href="{{ url_for('reservations.new') }}">New reservation</a>{% endif %}</div>
+<form class="filters" method="get">
+  <div class="field"><label for="date">Date</label><input id="date" type="date" name="date" value="{{ on_date.isoformat() }}" onchange="this.form.submit()"></div>
+  <div class="field"><label for="status">Status</label><select id="status" name="status" onchange="this.form.submit()">
+    <option value="">All</option>{% for st in ('requested','confirmed','seated','completed','cancelled','no_show') %}
+    <option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st.replace('_',' ')|capitalize }}</option>{% endfor %}</select></div>
+</form>
+<div class="table-wrap"><table><thead><tr><th>Time</th><th>Guest</th><th class="num">Party</th><th>Table</th><th>Status</th><th></th></tr></thead><tbody>
+{% for r in reservations %}<tr><td class="small">{{ r.reserved_at.strftime('%H:%M') }}</td>
+  <td>{{ r.customer.name if r.customer else r.guest_name }}{% if r.guest_phone %}<br><span class="muted small">{{ r.guest_phone }}</span>{% endif %}</td>
+  <td class="num">{{ r.party_size }}</td><td class="small">{{ r.table.name if r.table else '—' }}</td>
+  <td><span class="pill {{ 'ok' if r.status in ('seated','completed') else 'bad' if r.status in ('cancelled','no_show') else 'warn' }}">{{ r.status.replace('_',' ') }}</span></td>
+  <td class="actions-cell">
+    {% if can('reservations.manage') %}
+      {% if r.status in ('requested','confirmed') %}<form method="post" action="{{ url_for('reservations.advance', reservation_id=r.id) }}">{{ csrf() }}
+        <button class="btn sm" type="submit">{{ 'Confirm' if r.status == 'requested' else 'Mark arrived' }}</button></form>{% endif %}
+      {% if r.status in ('requested','confirmed') %}<form method="post" action="{{ url_for('reservations.cancel', reservation_id=r.id) }}" style="display:inline">{{ csrf() }}
+        <button class="btn sm danger" type="submit" data-confirm="Cancel this reservation?">Cancel</button></form>
+      <form method="post" action="{{ url_for('reservations.no_show', reservation_id=r.id) }}" style="display:inline">{{ csrf() }}
+        <button class="btn sm" type="submit">No-show</button></form>{% endif %}
+    {% endif %}
+    {% if r.status in ('requested','confirmed') and r.table and can('pos.sell') %}
+      <form method="post" action="{{ url_for('reservations.seat', reservation_id=r.id) }}" style="display:inline">{{ csrf() }}
+        <button class="btn sm primary" type="submit">Seat</button></form>{% endif %}
+    {% if r.order_id %}<a class="btn sm" href="{{ url_for('orders.show', order_id=r.order_id) }}">Order</a>{% endif %}
+  </td>
+</tr>{% else %}<tr><td colspan="6" class="empty">No reservations for this date.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

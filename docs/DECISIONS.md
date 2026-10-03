@@ -203,6 +203,59 @@ ticket represents food that already went out and stays in history) — the same 
 untouched" distinction the append-only ledgers use elsewhere in this system, just without a DB
 trigger, since a ticket is operational state, not a financial or audit record.
 
+## ADR-026 Returns: configurable default, per-line choice, recipe items write off only — Accepted (Phase 6)
+`settings.returns.restock_by_default` (off by default) sets the initial state of the "back to
+stock" checkbox on each refund line; staff can override it per line, per return. An item made
+from a recipe can never be restocked (see ADR-027) — only written off. This was the open question
+carried since Phase 2; resolved as "configurable, not forced," per the request to keep it
+changeable rather than opinionated.
+
+## ADR-027 Why recipe-based items can't be restocked — Accepted (Phase 6)
+Selling a recipe-based item (a cooked dish) consumes its INGREDIENTS, not the dish itself — a
+burger was never a stocked thing to put back. Reversing that precisely would mean replaying every
+ingredient consumption the sale triggered (potentially several, across sub-recipes) in reverse,
+which is real but materially bigger scope than this phase's refund flow. `refunds.can_restock()`
+only offers restocking for items that (a) are not produced by a recipe and (b) track batches
+themselves — e.g. a bottled drink resold as-is. A refunded recipe-based line is always written
+off; nothing points at this as a future gap because reversing a multi-ingredient consumption
+accurately (including FIFO layer choice) is exactly the kind of thing worth its own phase if ever
+requested, not a quick addition here.
+
+## ADR-028 Refunds price from the ORIGINAL sale's snapshot, never a live recalculation — Accepted (Phase 6)
+`complete_sale()` now persists each line's final net amount, tax amount and actual COGS onto the
+`OrderLine` itself at the moment of sale. Every refund calculation reads those numbers, not
+`pos.compute_totals()` run again — because tax rates, item prices or discount settings can change
+between the sale and a refund weeks later, and a refund must match what the receipt actually said,
+not what today's settings would produce. `OrderLine.refunded_quantity` accumulates across
+multiple partial refunds of the same line so double-refunding is blocked at the model level
+(`CHECK refunded_quantity <= quantity`), not just by the service's own arithmetic.
+
+## ADR-029 Customer credit and loyalty mirror the existing ledger pattern — Accepted (Phase 6)
+`CustomerLedgerEntry`/`CustomerBalance` and `LoyaltyTransaction` are the same shape as
+`SupplierLedgerEntry` (Phase 3) and `StockMovement` (Phase 2): append-only, DB-trigger-enforced,
+with a cached balance kept in step inside the same transaction as the event that changed it. A
+credit sale requires both a customer on the order and the `customers.credit` permission (already
+in the Phase 1 catalogue — "Sell on credit and record customer payments" — so no new permission
+was needed). Loyalty points are earned on the pre-redemption total (so redeeming points on a visit
+doesn't reduce what's earned on that same visit) and clawed back proportionally on a refund, capped
+at what the customer currently has, so a return can never push their balance negative.
+
+## ADR-030 Table merge and split only work before anything is fired — Accepted (Phase 6)
+Once a `KitchenTicket` exists for an order, its lines are already in front of the kitchen; moving
+them to a different order afterward would leave the ticket pointing at the wrong bill with no
+clean way to reconcile the two. `merge_orders()` and `split_order()` both refuse if any involved
+line has `is_fired = True`. This is the scope trim flagged before starting the phase: a real
+limitation, not a bug, and the natural next step (if ever needed) would be letting a fired
+ticket's `order_id` move with its lines — deliberately not built here.
+
+## ADR-031 Reservations are a day-filtered list, not a calendar grid — Accepted (Phase 6)
+`/pos/reservations/?date=YYYY-MM-DD` filters to one day at a time, consistent with every other
+list screen in the app (same pagination/filter pattern as orders, audit log, etc.) rather than a
+custom calendar-grid widget. This was the second scope trim flagged before starting the phase.
+Seating a reservation calls the exact same `pos.start_order()` every walk-in uses (defaulting to
+the reservation's branch's first active location when none is specified), so a seated reservation
+is just an ordinary dine-in order with a `Reservation` row pointing at it — no parallel order path.
+
 ## Open questions (needed before the phase noted)
 | Question | Needed by |
 |---|---|

@@ -127,7 +127,12 @@ def test_split_payment_card_and_cash_with_change(pos):
         db.session.commit()
         assert invoice.total == D("8.99") and invoice.paid_total == D("8.99")
         payments = list(db.session.scalars(db.select(Payment).where(Payment.invoice_id == invoice.id)))
-        assert sorted(pmt.amount for pmt in payments) == [D("5.00"), D("10.00")]
+        # change_due = (5.00 + 10.00) - 8.99 = 6.01, given only from the cash tender: the cash
+        # row's "amount" (what's actually applied to the bill) is 10.00 - 6.01 = 3.99, while
+        # "tendered" keeps the full 10.00 handed over, for an accurate receipt/till record.
+        by_method = {pmt.method: pmt for pmt in payments}
+        assert by_method["card"].amount == D("5.00") and by_method["card"].tendered is None
+        assert by_method["cash"].amount == D("3.99") and by_method["cash"].tendered == D("10.00")
 
 
 def test_only_one_cash_payment_row_allowed(pos):

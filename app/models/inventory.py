@@ -173,7 +173,7 @@ class StockBatch(TimestampMixin, db.Model):
 
 
 MOVEMENT_TYPES = ("opening", "adjustment_in", "adjustment_out", "transfer_in", "transfer_out",
-                  "consumption", "wastage", "purchase_in", "purchase_return")
+                  "consumption", "wastage", "purchase_in", "purchase_return", "sale_return")
 
 
 class StockMovement(db.Model):

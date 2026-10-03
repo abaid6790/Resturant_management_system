@@ -4,7 +4,15 @@
 <div class="page-head"><div><h1>Checkout — {{ order.order_number }}</h1></div></div>
 <div class="card"><h2>Total due</h2><p style="font-size:1.6rem;font-weight:650;margin:0">{{ totals.total }}</p></div>
 {% if errors %}<div class="banner">{% for k, v in errors.items() %}{{ v }} {% endfor %}</div>{% endif %}
+{% if loyalty_enabled and order.customer %}<div class="card"><h2>Loyalty points</h2>
+  <p class="muted small">{{ order.customer.name }} has {{ order.customer.loyalty_points }} points
+    (worth {{ points_value(order.customer.loyalty_points) }}).</p></div>{% endif %}
+{% if can_credit and order.customer %}<p class="help">You can pay less than the total; the remainder goes on {{ order.customer.name }}'s account.</p>{% endif %}
 <form method="post" class="card">{{ csrf() }}
+  {% if loyalty_enabled and order.customer and order.customer.loyalty_points > 0 %}
+  <div class="field"><label for="redeem_points">Redeem loyalty points (optional)</label>
+    <input id="redeem_points" name="redeem_points" placeholder="0" value="{{ request.form.get('redeem_points','') }}"></div>
+  {% endif %}
   <table id="pay-rows"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th></th></tr></thead><tbody>
     <tr><td><select name="pay_method"><option value="cash">Cash</option><option value="card">Card</option>
       <option value="bank_transfer">Bank transfer</option><option value="mobile_wallet">Mobile wallet</option><option value="other">Other</option></select></td>
