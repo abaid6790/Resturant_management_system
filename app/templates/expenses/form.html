@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Record expense{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record expense</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  <div class="field{{ ' has-error' if errors.category_id }}"><label for="f-category">Category</label>
+    <select id="f-category" name="category_id"><option value="">Choose…</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+    {% if errors.category_id %}<p class="err">{{ errors.category_id }}</p>{% endif %}</div>
+  <div class="grid2">{{ field('amount', 'Amount', form.amount, errors, required=True) }}
+    {{ field('expense_date', 'Date', form.expense_date, errors, type='date') }}</div>
+  <div class="field"><label for="f-method">Payment method</label><select id="f-method" name="method">
+    <option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank transfer</option>
+    <option value="mobile_wallet">Mobile wallet</option><option value="other">Other</option></select></div>
+  {{ field('reference', 'Reference', form.reference, errors, help='Optional, e.g. receipt number.') }}
+  <div class="field"><label for="f-desc">Description</label><textarea id="f-desc" name="description">{{ form.description }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">Record expense</button><a class="btn" href="{{ url_for('expenses.index') }}">Cancel</a></div>
+</form>
+{% endblock %}

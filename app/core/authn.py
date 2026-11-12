@@ -60,6 +60,17 @@ NAV = [
         ("Reservations", "reservations.index", "reservations.", "reservations.view"),
         ("Refunds", "refunds.index", "refunds.", "pos.refund"),
     ]),
+    ("Finance", [
+        ("Expenses", "expenses.index", "expenses.", "expenses.view"),
+        ("Profit and loss", "reports.profit_and_loss", "reports.profit_and_loss", "reports.financial"),
+        ("Daily closing", "reports.daily_closing", "reports.daily_closing", "reports.view"),
+        ("Employee sales", "reports.employee_sales", "reports.employee_sales", "reports.view"),
+    ]),
+    ("Staff", [
+        ("Employees", "hr.employees", "hr.employees", "employees.view"),
+        ("Attendance", "hr.attendance", "hr.attendance", "attendance.view"),
+        ("Shifts", "hr.shifts", "hr.shifts", "shifts.manage"),
+    ]),
     ("Purchasing", [
         ("Suppliers", "suppliers.index", "suppliers.", "suppliers.view"),
         ("Purchase orders", "purchases.index", "purchases.", "purchases.view"),

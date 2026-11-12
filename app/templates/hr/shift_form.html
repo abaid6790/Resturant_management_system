@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Add shift{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Add shift</h1></div></div>
+<form method="post" class="card" style="max-width:30rem" novalidate>{{ csrf() }}
+  <div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  {{ field('name', 'Shift name', form.name, errors, required=True, help='e.g. Morning, Evening.') }}
+  <div class="grid2">{{ field('start_time', 'Start time', form.start_time, errors, type='time', required=True) }}
+    {{ field('end_time', 'End time', form.end_time, errors, type='time', required=True) }}</div>
+  <div class="actions"><button class="btn primary" type="submit">Create shift</button><a class="btn" href="{{ url_for('hr.shifts') }}">Cancel</a></div>
+</form>
+{% endblock %}

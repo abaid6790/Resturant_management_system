@@ -41,5 +41,7 @@ from .purchasing import (  # noqa: F401
     SupplierLedgerEntry,
     SupplierPayment,
 )
+from .expenses import Expense, ExpenseCategory  # noqa: F401
+from .hr import AttendanceRecord, Employee, Shift, ShiftAssignment  # noqa: F401
 from .settings import Setting  # noqa: F401
 from .system import SchemaMeta  # noqa: F401

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}{{ 'Edit employee' if employee else 'Add employee' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ employee.full_name if employee else 'Add employee' }}</h1></div></div>
+<form method="post" class="card" style="max-width:34rem" novalidate>{{ csrf() }}
+  {% if not employee %}<div class="field{{ ' has-error' if errors.branch_id }}"><label for="f-branch">Branch</label>
+    <select id="f-branch" name="branch_id"><option value="">Choose…</option>{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    {% if errors.branch_id %}<p class="err">{{ errors.branch_id }}</p>{% endif %}</div>
+  {% else %}<div class="field"><label>Branch</label><input value="{{ employee.branch.name }}" disabled></div>{% endif %}
+  {{ field('full_name', 'Full name', form.full_name, errors, required=True) }}
+  <div class="grid2">{{ field('position', 'Position', form.position, errors) }}{{ field('phone', 'Phone', form.phone, errors) }}</div>
+  <div class="grid2">{{ field('email', 'Email', form.email, errors) }}{{ field('hire_date', 'Hire date', form.hire_date, errors, type='date') }}</div>
+  <div class="field"><label for="f-user">Linked user account (optional)</label><select id="f-user" name="user_id"><option value="">None</option>
+    {% for u in users %}<option value="{{ u.id }}" {% if form.user_id|string == u.id|string %}selected{% endif %}>{{ u.full_name }} ({{ u.username }})</option>{% endfor %}</select>
+    <p class="help">Connects this employee to their sign-in account, for sales and activity tracking.</p></div>
+  <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">{{ form.notes }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">{{ 'Save changes' if employee else 'Add employee' }}</button>
+    <a class="btn" href="{{ url_for('hr.employees') }}">Cancel</a></div>
+</form>
+{% endblock %}

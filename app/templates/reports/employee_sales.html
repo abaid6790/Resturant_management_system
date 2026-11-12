@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Employee sales{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Sales by employee</h1><p>{{ date_from }} to {{ date_to }}</p></div></div>
+<form class="filters" method="get">
+  <div class="field"><label for="from">From</label><input id="from" type="date" name="from" value="{{ date_from }}"></div>
+  <div class="field"><label for="to">To</label><input id="to" type="date" name="to" value="{{ date_to }}"></div>
+  <div class="field"><label for="branch_id">Branch</label><select id="branch_id" name="branch_id"><option value="">All branches</option>
+    {% for b in branches %}<option value="{{ b.id }}" {% if branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="table-wrap"><table><thead><tr><th>Employee</th><th class="num">Orders</th><th class="num">Total sales</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r.user.full_name if r.user else 'Unassigned' }}</td><td class="num">{{ r.order_count }}</td><td class="num">{{ r.total }}</td>
+</tr>{% else %}<tr><td colspan="3" class="empty">No sales in this period.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

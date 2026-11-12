@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Daily closing{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Daily closing</h1><p>{{ on_date }}</p></div></div>
+<form class="filters" method="get">
+  <div class="field"><label for="date">Date</label><input id="date" type="date" name="date" value="{{ on_date }}" onchange="this.form.submit()"></div>
+  <div class="field"><label for="branch_id">Branch</label><select id="branch_id" name="branch_id" onchange="this.form.submit()"><option value="">All branches</option>
+    {% for b in branches %}<option value="{{ b.id }}" {% if branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+</form>
+<div class="grid2">
+<div class="card"><h2>Summary</h2><table style="border:none"><tbody>
+<tr><td>Net sales</td><td class="num">{{ pl.net_sales }}</td></tr>
+<tr><td>COGS</td><td class="num">{{ pl.cogs }}</td></tr>
+<tr><td>Gross profit</td><td class="num">{{ pl.gross_profit }}</td></tr>
+<tr><td>Wastage cost</td><td class="num">{{ wastage_cost }}</td></tr>
+<tr><td>Orders</td><td class="num">{{ pl.order_count }}</td></tr>
+</tbody></table></div>
+<div class="card"><h2>Payment methods</h2><table style="border:none"><tbody>
+{% for method, total in payment_methods %}<tr><td>{{ method.replace('_',' ')|capitalize }}</td><td class="num">{{ total }}</td></tr>
+{% else %}<tr><td class="empty" colspan="2">No payments recorded.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<div class="card"><h2>Cash registers opened this day</h2>
+<div class="table-wrap"><table><thead><tr><th>Location</th><th class="num">Opening float</th><th>Status</th><th class="num">Expected</th><th class="num">Counted</th><th class="num">Variance</th></tr></thead><tbody>
+{% for s in cash_sessions %}<tr><td>{{ s.location.name }}</td><td class="num">{{ s.opening_float }}</td>
+  <td><span class="pill {{ 'ok' if s.status == 'open' else '' }}">{{ s.status }}</span></td>
+  <td class="num">{{ s.expected_cash if s.expected_cash is not none else '—' }}</td>
+  <td class="num">{{ s.counted_cash if s.counted_cash is not none else '—' }}</td>
+  <td class="num">{{ s.variance if s.variance is not none else '—' }}</td>
+</tr>{% else %}<tr><td colspan="6" class="empty">No cash registers opened this day.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

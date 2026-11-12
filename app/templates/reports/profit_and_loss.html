@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Profit and loss{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Profit and loss</h1><p>{{ date_from }} to {{ date_to }}</p></div></div>
+<form class="filters" method="get">
+  <div class="field"><label for="from">From</label><input id="from" type="date" name="from" value="{{ date_from }}"></div>
+  <div class="field"><label for="to">To</label><input id="to" type="date" name="to" value="{{ date_to }}"></div>
+  <div class="field"><label for="branch_id">Branch</label><select id="branch_id" name="branch_id"><option value="">All branches</option>
+    {% for b in branches %}<option value="{{ b.id }}" {% if branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+<div class="card" style="max-width:36rem"><table style="border:none"><tbody>
+<tr><td>Gross sales</td><td class="num">{{ pl.gross_sales }}</td></tr>
+<tr><td>Refunds</td><td class="num">-{{ pl.refunds }}</td></tr>
+<tr><td><strong>Net sales</strong></td><td class="num"><strong>{{ pl.net_sales }}</strong></td></tr>
+<tr><td class="muted small">Discounts given (informational)</td><td class="num muted small">{{ pl.discounts }}</td></tr>
+<tr><td class="muted small">Tax collected (informational)</td><td class="num muted small">{{ pl.tax }}</td></tr>
+<tr><td>Cost of goods sold</td><td class="num">-{{ pl.cogs }}</td></tr>
+<tr><td><strong>Gross profit</strong></td><td class="num"><strong>{{ pl.gross_profit }}</strong></td></tr>
+<tr><td class="muted small">Gross margin</td><td class="num muted small">{{ pl.gross_margin_pct }}%</td></tr>
+<tr><td>Operating expenses</td><td class="num">-{{ pl.expenses }}</td></tr>
+<tr><td style="border-top:2px solid var(--line);padding-top:.6rem"><strong>Net profit</strong></td>
+  <td class="num" style="border-top:2px solid var(--line);padding-top:.6rem"><strong>{{ pl.net_profit }}</strong></td></tr>
+<tr><td class="muted small">Net margin</td><td class="num muted small">{{ pl.net_margin_pct }}%</td></tr>
+<tr><td class="muted small">Orders</td><td class="num muted small">{{ pl.order_count }}</td></tr>
+</tbody></table></div>
+{% endblock %}

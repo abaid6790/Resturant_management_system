@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, status_pill with context %}
+{% block title %}Shifts{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Shifts</h1></div>
+  <a class="btn primary" href="{{ url_for('hr.new_shift') }}">Add shift</a></div>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Branch</th><th>Time</th><th>Status</th><th></th></tr></thead><tbody>
+{% for s in shifts %}<tr><td>{{ s.name }}</td><td class="small">{{ s.branch.name }}</td><td class="small">{{ s.start_time.strftime('%H:%M') }}–{{ s.end_time.strftime('%H:%M') }}</td>
+  <td>{{ status_pill(s.is_active) }}</td>
+  <td class="actions-cell"><form method="post" action="{{ url_for('hr.shift_status', shift_id=s.id) }}">{{ csrf() }}
+    <input type="hidden" name="active" value="{{ 0 if s.is_active else 1 }}">
+    <button class="btn sm {{ 'danger' if s.is_active else '' }}" type="submit">{{ 'Deactivate' if s.is_active else 'Activate' }}</button></form></td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No shifts defined yet.</td></tr>{% endfor %}</tbody></table></div>
+
+<div class="card" style="margin-top:1.2rem"><h2>Assign to a date</h2>
+<form class="filters" method="get" style="margin-bottom:1rem"><div class="field"><label for="date">Date</label>
+  <input id="date" type="date" name="date" value="{{ on_date or '' }}" onchange="this.form.submit()"></div></form>
+{% if on_date %}
+<form method="post" action="{{ url_for('hr.assign', shift_id=shifts[0].id if shifts else 0) }}" id="assign-form" class="grid2" style="align-items:end;margin-bottom:1rem">{{ csrf() }}
+  <input type="hidden" name="work_date" value="{{ on_date }}">
+  <div class="field"><label for="a-shift">Shift</label><select id="a-shift" onchange="document.getElementById('assign-form').action = this.value">
+    {% for s in shifts %}<option value="{{ url_for('hr.assign', shift_id=s.id) }}">{{ s.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="a-emp">Employee ID</label><input id="a-emp" name="employee_id" placeholder="Employee ID" required></div>
+  <div class="field"><button class="btn primary" type="submit">Assign</button></div>
+</form>
+<div class="table-wrap"><table><thead><tr><th>Shift</th><th>Employee</th><th>Status</th><th></th></tr></thead><tbody>
+{% for a in assignments %}<tr><td>{{ a.shift.name }}</td><td>{{ a.employee.full_name }}</td>
+  <td><span class="pill {{ 'ok' if a.status == 'completed' else 'bad' if a.status in ('missed','cancelled') else 'warn' }}">{{ a.status }}</span></td>
+  <td class="actions-cell">{% if a.status == 'scheduled' %}
+    <form method="post" action="{{ url_for('hr.assignment_status', assignment_id=a.id) }}" style="display:inline">{{ csrf() }}<input type="hidden" name="status" value="completed"><button class="btn sm" type="submit">Mark done</button></form>
+    <form method="post" action="{{ url_for('hr.assignment_status', assignment_id=a.id) }}" style="display:inline">{{ csrf() }}<input type="hidden" name="status" value="missed"><button class="btn sm danger" type="submit">Mark missed</button></form>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="4" class="empty">No assignments for this date.</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}</div>
+{% endblock %}

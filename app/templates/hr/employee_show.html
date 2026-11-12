@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, pager with context %}
+{% block title %}{{ employee.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ employee.full_name }}</h1><p>{{ employee.position or '' }} · {{ employee.branch.name }}</p></div>
+  {% if can('employees.manage') %}<a class="btn" href="{{ url_for('hr.edit_employee', employee_id=employee.id) }}">Edit</a>{% endif %}</div>
+{% if can('attendance.manage') %}<div class="card"><h2>Attendance</h2>
+  {% if open_record %}<p>Clocked in since {{ open_record.clock_in|dt }}.</p>
+    <form method="post" action="{{ url_for('hr.clock_out', record_id=open_record.id) }}">{{ csrf() }}<button class="btn primary" type="submit">Clock out</button></form>
+  {% else %}<form method="post" action="{{ url_for('hr.clock_in', employee_id=employee.id) }}">{{ csrf() }}<button class="btn primary" type="submit">Clock in</button></form>{% endif %}</div>{% endif %}
+<div class="card"><h2>Attendance history</h2>
+<div class="table-wrap"><table><thead><tr><th>Clock in</th><th>Clock out</th><th>Hours</th></tr></thead><tbody>
+{% for r in records %}<tr><td class="small">{{ r.clock_in|dt }}</td><td class="small">{{ r.clock_out|dt if r.clock_out else 'Still clocked in' }}</td>
+  <td class="num">{{ ((r.clock_out - r.clock_in).total_seconds() / 3600)|round(1) if r.clock_out else '—' }}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">No attendance recorded yet.</td></tr>{% endfor %}</tbody></table></div>
+{{ pager(meta) }}</div>
+{% endblock %}

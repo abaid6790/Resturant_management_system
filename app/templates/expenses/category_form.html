@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, field with context %}
+{% block title %}Add expense category{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Add expense category</h1></div></div>
+<form method="post" class="card" style="max-width:30rem" novalidate>{{ csrf() }}
+  {{ field('name', 'Name', form.name, errors, required=True, help='e.g. Rent, Utilities, Supplies.') }}
+  <div class="field"><label for="f-desc">Description</label><textarea id="f-desc" name="description">{{ form.description }}</textarea></div>
+  <div class="actions"><button class="btn primary" type="submit">Create category</button><a class="btn" href="{{ url_for('expenses.categories') }}">Cancel</a></div>
+</form>
+{% endblock %}
