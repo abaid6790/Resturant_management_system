@@ -6,3 +6,5 @@ python-dotenv>=1.0
 waitress>=3.0
 argon2-cffi>=23.1
 tzdata>=2024.1
+openpyxl>=3.1
+reportlab>=4.0

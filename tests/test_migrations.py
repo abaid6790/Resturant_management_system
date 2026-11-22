@@ -106,3 +106,14 @@ def test_advanced_pos_migrations_are_reversible(db_app):
             assert db.session.execute(
                 db.text(f"select 1 from pg_trigger where tgname = '{trig}'")
             ).first() is not None
+
+
+def test_finance_hr_migrations_are_reversible(db_app):
+    with db_app.app_context():
+        downgrade(revision="0008")
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert "expenses" not in tables and "employees" not in tables and "refunds" in tables
+        upgrade()
+        tables = set(db.inspect(db.engine).get_table_names())
+        assert {"expense_categories", "expenses", "employees", "attendance_records", "shifts",
+                "shift_assignments"} <= tables

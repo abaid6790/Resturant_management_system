@@ -256,6 +256,26 @@ Seating a reservation calls the exact same `pos.start_order()` every walk-in use
 the reservation's branch's first active location when none is specified), so a seated reservation
 is just an ordinary dine-in order with a `Reservation` row pointing at it — no parallel order path.
 
+## ADR-032 The P&L is an aggregation, not a ledger — Accepted (Phase 7)
+Profit and loss is computed live from invoices, refunds, refund lines and expenses
+(`app/services/reporting.py`); there is no separate profit table to drift out of sync with the
+transactions, which is the spec's own exit test ("profit reconciles to the underlying
+transactions"). Net sales = invoice totals - refunds. COGS = invoice COGS - the cost of refunded
+items that were restocked (they are back in sellable stock, so no longer a cost). Net profit =
+gross profit - expenses. Discounts and tax are shown informationally: invoice totals are already
+net of discount, so subtracting them again would double-count.
+
+## ADR-033 Cash expenses use whichever register is open at the branch — Accepted (Phase 7)
+A cash expense debits the open cash-register session at the branch (first active location found);
+with no session open, it is still recorded, just without a till link. With several drawers open at
+once the choice is arbitrary — most restaurants run one; a location picker is the natural refinement.
+
+## ADR-034 Dates cross the web boundary through one parser — Accepted (Phase 7)
+`app.core.dates.as_date()` converts ISO strings to dates; blank or garbage becomes "no filter"
+instead of an error. It exists because query-string and form dates were reaching SQL as raw
+strings, which PostgreSQL rejects against DATE columns (a 500). It is applied inside the service
+functions, so every caller is covered rather than each view remembering to convert.
+
 ## Open questions (needed before the phase noted)
 | Question | Needed by |
 |---|---|

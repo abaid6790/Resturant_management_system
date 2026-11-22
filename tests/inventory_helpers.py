@@ -84,3 +84,13 @@ def kitchen_setup(app, branch_ids, x):
         bun.selling_price = "0.50"  # sellable, but no station -> lands on the "General" ticket
         db.session.commit()
         return {"station": station.id}
+
+
+def finance_setup(app, branch_ids):
+    """Adds an expense category. Returns dict of ids."""
+    from app.models.expenses import ExpenseCategory
+    with app.app_context():
+        cat = ExpenseCategory(name="Utilities")
+        db.session.add(cat)
+        db.session.commit()
+        return {"category": cat.id}

@@ -88,3 +88,11 @@ def fresh_client():
     app = create_app("testing")
     app.extensions["setup_done"] = True
     return app, app.test_client()
+
+
+@pytest.fixture()
+def finance(pos):
+    """pos plus an expense category. Returns (app, ids, x, p, f)."""
+    from tests.inventory_helpers import finance_setup
+    app, ids, x, p = pos
+    return app, ids, x, p, finance_setup(app, ids)

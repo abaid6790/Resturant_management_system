@@ -1,6 +1,8 @@
 """Import every model module here so Alembic autogenerate sees all tables."""
 from .audit import AuditLog  # noqa: F401
 from .auth import Branch, Permission, Role, User, UserSession  # noqa: F401
+from .expenses import Expense, ExpenseCategory  # noqa: F401
+from .hr import AttendanceRecord, Employee, Shift, ShiftAssignment  # noqa: F401
 from .inventory import (  # noqa: F401
     InventoryCategory,
     InventoryItem,
@@ -41,7 +43,5 @@ from .purchasing import (  # noqa: F401
     SupplierLedgerEntry,
     SupplierPayment,
 )
-from .expenses import Expense, ExpenseCategory  # noqa: F401
-from .hr import AttendanceRecord, Employee, Shift, ShiftAssignment  # noqa: F401
 from .settings import Setting  # noqa: F401
 from .system import SchemaMeta  # noqa: F401
